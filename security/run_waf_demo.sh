@@ -3,6 +3,8 @@
 # Based on GlooE WAF example
 # https://gloo.solo.io/gloo_routing/gateway_configuration/waf/
 
+# brew install kubernetes-cli httpie solo-io/tap/glooctl jq
+
 # Will exit script if we would use an uninitialised variable:
 set -o nounset
 # Will exit script when a simple command (not a control structure) fails:
@@ -18,11 +20,13 @@ trap print_error ERR
 # Get directory this script is located in to access script local files
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-source "$SCRIPT_DIR/../working_environment.sh"
+# source "$SCRIPT_DIR/../working_environment.sh"
 
-# Install  example application
+# Install example application
+# kubectl --namespace='default' apply \
+#   --filename="$SCRIPT_DIR/../resources/petstore.yaml"
 kubectl --namespace='default' apply \
-  --filename="$SCRIPT_DIR/../resources/petstore.yaml"
+  --filename='https://raw.githubusercontent.com/sololabs/demos2/master/resources/petstore.yaml'
 
 # Cleanup old examples
 kubectl --namespace='gloo-system' delete virtualservice/default && true # ignore errors
@@ -61,18 +65,20 @@ spec:
         configs:
           waf:
             settings:
-              coreRuleSet:
-                customSettingsString: |
-                    # default rules section
-                    SecRuleEngine On
-                    SecRequestBodyAccess On
-                    # CRS section
-                    SecDefaultAction "phase:1,log,auditlog,pass"
-                    SecDefaultAction "phase:2,log,auditlog,pass"
-                    SecAction "id:900990,phase:1,nolog,pass,t:none,setvar:tx.crs_setup_version=320"
+              coreRuleSet: {}
+                # customSettingsString: |
+                #   # default rules section
+                #   SecRuleEngine On
+                #   SecRequestBodyAccess On
+                #   # CRS section
+                #   SecDefaultAction "phase:1,log,auditlog,pass"
+                #   SecDefaultAction "phase:2,log,auditlog,pass"
+                #   SecAction "id:900990,phase:1,nolog,pass,t:none,setvar:tx.crs_setup_version=320"
 EOF
 
-kubectl --namespace='gloo-system' get virtualservice/default --output yaml
+sleep 10
+
+# kubectl --namespace='gloo-system' get virtualservice/default --output yaml
 
 # Wait for demo application to be fully deployed and running
 kubectl --namespace='default' rollout status deployment/petstore --watch=true
@@ -90,5 +96,5 @@ printf "Should return 200\n"
 http --json http://localhost:8080/api/pets/1
 
 printf "Should return 403\n"
-# curl --silent --write-out "%{http_code}\n" --headers "User-Agent: Nikto" http://localhost:8080/api/pets/1 | jq
+# curl --silent --write-out "%{http_code}\n" --header "User-Agent: Nikto" http://localhost:8080/api/pets/1 | jq
 http --json http://localhost:8080/api/pets/1 User-Agent:Nikto
