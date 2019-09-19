@@ -99,6 +99,7 @@ case $K8S_TOOL in
 
     gcloud container clusters delete "$DEMO_CLUSTER_NAME" --quiet && true # Ignore errors
     gcloud container clusters create "$DEMO_CLUSTER_NAME" \
+      --cluster-version='latest' \
       --machine-type='n1-standard-2' \
       --num-nodes='3' \
       --labels='creator=scranton'

@@ -49,6 +49,9 @@ kubectl --namespace='default' apply \
 
 # Configure AWS upstreams
 if [ -f ~/scripts/secret/aws_credentials.sh ]; then
+  # Cleanup old resources
+  kubectl --namespace='gloo-system' delete secret/aws upstream/aws && true # ignore errors
+
   # glooctl create secret aws --name 'aws' --namespace 'gloo-system' --access-key '<access key>' --secret-key '<secret key>'
   source ~/scripts/secret/aws_credentials.sh
 
