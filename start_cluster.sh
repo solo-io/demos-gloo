@@ -145,7 +145,7 @@ case $TILLER_MODE in
     helm init --service-account='tiller'
 
     # Wait for tiller to be fully running
-    kubectl --namespace='kube-system' rollout status deployment/tiller-deploy --watch=true
+    kubectl --namespace='kube-system' rollout status deployment/tiller-deploy --watch='true'
     ;;
 
     none)
@@ -167,7 +167,7 @@ case $GLOO_MODE in
       exit
     fi
 
-    helm repo add glooe http://storage.googleapis.com/gloo-ee-helm
+    helm repo add glooe 'http://storage.googleapis.com/gloo-ee-helm'
     helm repo update
     helm upgrade --install glooe glooe/gloo-ee \
       --namespace='gloo-system' \
@@ -179,7 +179,7 @@ case $GLOO_MODE in
   oss)
     GLOO_VERSION=${GLOO_VERSION:-$GLOO_OSS_VERSION}
 
-    helm repo add gloo https://storage.googleapis.com/solo-public-helm
+    helm repo add gloo 'https://storage.googleapis.com/solo-public-helm'
     helm repo update
     helm upgrade --install gloo gloo/gloo \
       --namespace='gloo-system' \
@@ -190,9 +190,9 @@ case $GLOO_MODE in
   knative)
     GLOO_VERSION=${GLOO_VERSION:-$GLOO_OSS_VERSION}
 
-    helm repo add gloo https://storage.googleapis.com/solo-public-helm
+    helm repo add gloo 'https://storage.googleapis.com/solo-public-helm'
     helm repo update
-    helm fetch --untar=true --untardir=. --version="$GLOO_VERSION" \
+    helm fetch --untar='true' --untardir='.' --version="$GLOO_VERSION" \
       gloo/gloo
     helm upgrade --install gloo gloo/gloo \
       --namespace='gloo-system' \
@@ -205,6 +205,6 @@ case $GLOO_MODE in
 esac
 
 # Wait for GlooE gateway-proxy to be fully deployed and running
-# kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy-v2 --watch=true
+# kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy-v2 --watch='true'
 
 # kubectl --namespace gloo-system port-forward deploy/gateway-proxy-v2 8080:8080 >/dev/null &
