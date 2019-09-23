@@ -21,16 +21,16 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source "$SCRIPT_DIR/../working_environment.sh"
 
 # Install  example application
-kubectl --namespace=default apply \
-  --filename "$SCRIPT_DIR/../resources/petstore.yaml"
+kubectl --namespace='default' apply \
+  --filename="$SCRIPT_DIR/../resources/petstore.yaml"
 
 # Create policy ConfigMap deleting any leftovers from other examples
 POLICY_K8S_CONFIGMAP='allow-get-users'
-kubectl --namespace=gloo-system delete configmap "$POLICY_K8S_CONFIGMAP" && true # ignore errors
-kubectl --namespace=gloo-system create configmap "$POLICY_K8S_CONFIGMAP" --from-file="$SCRIPT_DIR/policy.rego"
+kubectl --namespace='gloo-system' delete configmap "$POLICY_K8S_CONFIGMAP" && true # ignore errors
+kubectl --namespace='gloo-system' create configmap "$POLICY_K8S_CONFIGMAP" --from-file="$SCRIPT_DIR/policy.rego"
 
 # Cleanup old examples
-kubectl --namespace=gloo-system delete virtualservice default && true # ignore errors
+kubectl --namespace='gloo-system' delete virtualservice default && true # ignore errors
 
 # glooctl create virtualservice \
 #   --name='default' \
@@ -77,14 +77,14 @@ spec:
 EOF
 
 # Wait for demo application to be fully deployed and running
-kubectl --namespace=default rollout status deployment/petstore --watch=true
+kubectl --namespace='default' rollout status deployment/petstore --watch='true'
 
 PROXY_PID_FILE=$SCRIPT_DIR/proxy_pf.pid
 if [[ -f $PROXY_PID_FILE ]]; then
   xargs kill <"$PROXY_PID_FILE" && true # ignore errors
   rm "$PROXY_PID_FILE"
 fi
-( (kubectl --namespace=gloo-system port-forward service/gateway-proxy-v2 8080:80 >/dev/null) & echo $! > "$PROXY_PID_FILE" & )
+( (kubectl --namespace='gloo-system' port-forward service/gateway-proxy-v2 8080:80 >/dev/null) & echo $! > "$PROXY_PID_FILE" & )
 
 printf "Should return 403\n"
 # curl --silent --write-out "%{http_code}\n" http://localhost:8080/api

@@ -7,14 +7,16 @@ source "$SCRIPT_DIR/../working_environment.sh"
 
 POLICY_K8S_CONFIGMAP='allow-get-users'
 
-kubectl --namespace=gloo-system delete virtualservice/default
-kubectl --namespace=gloo-system delete configmap/"$POLICY_K8S_CONFIGMAP"
-
-kubectl --namespace=default delete \
-  --filename "$SCRIPT_DIR/../resources/petstore.yaml"
-
 PROXY_PID_FILE=$SCRIPT_DIR/proxy_pf.pid
 if [[ -f $PROXY_PID_FILE ]]; then
   xargs kill <"$PROXY_PID_FILE" && true # ignore errors
   rm "$PROXY_PID_FILE"
 fi
+
+kubectl --namespace='gloo-system' delete \
+  virtualservice/default \
+  configmap/$POLICY_K8S_CONFIGMAP
+
+kubectl --namespace='default' delete \
+  --filename="$SCRIPT_DIR/../resources/petstore.yaml"
+

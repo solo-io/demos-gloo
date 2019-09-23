@@ -36,12 +36,12 @@ if [[ -z $OIDC_CLIENT_ID ]] || [[ -z $OIDC_CLIENT_SECRET ]]; then
 fi
 
 # Install Petclinic example application
-kubectl --namespace=default apply \
-  --filename "$SCRIPT_DIR/../resources/petclinic-db.yaml" \
-  --filename "$SCRIPT_DIR/../resources/petclinic.yaml"
+kubectl --namespace='default' apply \
+  --filename="$SCRIPT_DIR/../resources/petclinic-db.yaml" \
+  --filename="$SCRIPT_DIR/../resources/petclinic.yaml"
 
 # Cleanup old examples
-kubectl --namespace=gloo-system delete virtualservice default && true # ignore errors
+kubectl --namespace='gloo-system' delete virtualservice default && true # ignore errors
 
 # printf 'glooctl version = %s' "$(glooctl --version)"
 
@@ -49,7 +49,7 @@ K8S_SECRET_NAME=my-oauth-secret
 
 # glooctl create secret oauth \
 #   --name="$K8S_SECRET_NAME" \
-#   --namespace=gloo-system \
+#   --namespace='gloo-system' \
 #   --client-secret="$OIDC_CLIENT_SECRET"
 
 kubectl apply --filename - <<EOF
@@ -123,17 +123,17 @@ EOF
 
 # kubectl --namespace gloo-system get virtualservice/default --output yaml
 
-kubectl --namespace=gloo-system rollout status deployment/gateway-proxy-v2 --watch=true
+kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy-v2 --watch='true'
 
 PROXY_PID_FILE=$SCRIPT_DIR/proxy_pf.pid
 if [[ -f $PROXY_PID_FILE ]]; then
   xargs kill <"$PROXY_PID_FILE" && true # ignore errors
   rm "$PROXY_PID_FILE"
 fi
-( (kubectl --namespace=gloo-system port-forward service/gateway-proxy-v2 8080:80 >/dev/null) & echo $! > "$PROXY_PID_FILE" & )
+( (kubectl --namespace='gloo-system' port-forward service/gateway-proxy-v2 8080:80 >/dev/null) & echo $! > "$PROXY_PID_FILE" & )
 
 # Wait for demo application to be fully deployed and running
-kubectl --namespace=default rollout status deployment/petclinic --watch=true
+kubectl --namespace='default' rollout status deployment/petclinic --watch='true'
 
 # open http://localhost:8080/
 open -a "Google Chrome" --new --args --incognito "http://localhost:8080/"
