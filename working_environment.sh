@@ -5,4 +5,4 @@ K8S_TOOL=gcloud     # kind, minikube, minishift, gcloud
 TILLER_MODE=cluster # local or cluster
 GLOO_MODE=ent       # oss, ent, knative
 
-GLOO_VERSION=0.18.31 # ent
+GLOO_VERSION=0.18.32 # ent
