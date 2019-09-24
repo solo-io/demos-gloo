@@ -20,6 +20,11 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 source "$SCRIPT_DIR/../working_environment.sh"
 
+if [[ $K8S_TOOL == "kind" ]]; then
+    KUBECONFIG=$(kind get kubeconfig-path --name="$DEMO_CLUSTER_NAME")
+    export KUBECONFIG
+fi
+
 # Install Istio
 # helm repo add istio.io 'https://storage.googleapis.com/istio-release/releases/1.2.4/charts/'
 helm repo add istio.io 'https://storage.googleapis.com/istio-release/releases/1.3.0/charts/'

@@ -29,6 +29,11 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 source "$SCRIPT_DIR/../working_environment.sh"
 
+if [[ $K8S_TOOL == "kind" ]]; then
+    KUBECONFIG=$(kind get kubeconfig-path --name="$DEMO_CLUSTER_NAME")
+    export KUBECONFIG
+fi
+
 # Install DEX OIDC Provider https://github.com/dexidp/dex
 # DEX is not required for Gloo extauth; it is here as an OIDC provider to simplify example
 helm upgrade --install dex stable/dex \

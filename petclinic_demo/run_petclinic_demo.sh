@@ -17,11 +17,16 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 source "$SCRIPT_DIR/../working_environment.sh"
 
+if [[ $K8S_TOOL == "kind" ]]; then
+    KUBECONFIG=$(kind get kubeconfig-path --name="$DEMO_CLUSTER_NAME")
+    export KUBECONFIG
+fi
+
 # Install petclinic application
 kubectl --namespace='default' apply \
-  --filename "$SCRIPT_DIR/../resources/petclinic-db.yaml" \
-  --filename "$SCRIPT_DIR/../resources/petclinic.yaml" \
-  --filename "$SCRIPT_DIR/../resources/petclinic-vets.yaml"
+  --filename="$SCRIPT_DIR/../resources/petclinic-db.yaml" \
+  --filename="$SCRIPT_DIR/../resources/petclinic.yaml" \
+  --filename="$SCRIPT_DIR/../resources/petclinic-vets.yaml"
 
 kubectl apply --filename - <<EOF
 apiVersion: gateway.solo.io/v1
