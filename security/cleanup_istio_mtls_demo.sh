@@ -20,6 +20,11 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 source "$SCRIPT_DIR/../working_environment.sh"
 
+if [[ $K8S_TOOL == "kind" ]]; then
+  KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
+  export KUBECONFIG
+fi
+
 PROXY_PID_FILE=$SCRIPT_DIR/proxy_pf.pid
 if [[ -f $PROXY_PID_FILE ]]; then
   xargs kill <"$PROXY_PID_FILE" && true # ignore errors

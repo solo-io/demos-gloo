@@ -17,6 +17,11 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 source "$SCRIPT_DIR/../working_environment.sh"
 
+if [[ $K8S_TOOL == "kind" ]]; then
+  KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
+  export KUBECONFIG
+fi
+
 kubectl apply \
   --filename=https://raw.githubusercontent.com/solo-io/service-mesh-hub/master/install/service-mesh-hub.yaml
 
