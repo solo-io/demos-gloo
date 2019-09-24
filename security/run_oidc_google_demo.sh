@@ -31,8 +31,8 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source "$SCRIPT_DIR/../working_environment.sh"
 
 if [[ $K8S_TOOL == "kind" ]]; then
-    KUBECONFIG=$(kind get kubeconfig-path --name="$DEMO_CLUSTER_NAME")
-    export KUBECONFIG
+  KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
+  export KUBECONFIG
 fi
 
 if [[ -z $OIDC_CLIENT_ID ]] || [[ -z $OIDC_CLIENT_SECRET ]]; then
