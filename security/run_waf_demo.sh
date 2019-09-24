@@ -78,15 +78,15 @@ spec:
                   # CRS section
                   SecDefaultAction "phase:1,log,auditlog,deny,status:403"
                   SecDefaultAction "phase:2,log,auditlog,deny,status:403"
-                  SecAction "id:900000,phase:1,pass,nolog,setvar:tx.paranoia_level=1"
-                  # SecAction "id:900230,phase:1,nolog,pass,t:none,setvar:'tx.allowed_http_versions=HTTP/1.0 HTTP/1.1 HTTP/2 HTTP/2.0'"
+                  SecAction "id:900000,phase:1,nolog,pass,t:none,setvar:tx.paranoia_level=4"
+                  SecAction "id:900230,phase:1,nolog,pass,t:none,setvar:'tx.allowed_http_versions=HTTP/1.0 HTTP/1.1 HTTP/2 HTTP/2.0'"
                   SecAction "id:900250,phase:1,nolog,pass,t:none,setvar:'tx.restricted_headers=/proxy/ /lock-token/ /content-range/ /translate/ /if/ /bar/'"
                   SecAction "id:900990,phase:1,nolog,pass,t:none,setvar:tx.crs_setup_version=310"
-              # ruleSets:
-              # - ruleStr: |
-              #     # Turn rule engine on
-              #     SecRuleEngine On
-              #     SecRule REQUEST_HEADERS:User-Agent "nikto" "deny,t:lowercase,status:403,id:107,phase:1,msg:'blocked scammer'"
+              ruleSets:
+              - ruleStr: |
+                  # Turn rule engine on
+                  SecRuleEngine On
+                  SecRule REQUEST_HEADERS:User-Agent "scott" "id:107,phase:1,deny,t:lowercase,status:403,msg:'blocked scammer'"
 EOF
 
 sleep 10
@@ -107,35 +107,45 @@ kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy-v2 --w
 sleep 10
 
 printf "\nShould return 200\n"
-curl --silent --write-out "\n%{http_code}\n" http://localhost:8080/api/pets/1 | jq
-# http --json http://localhost:8080/api/pets/1
+# curl --silent --write-out "\n%{http_code}\n" http://localhost:8080/api/pets/1 | jq
+http --json http://localhost:8080/api/pets/1
 
 # Rule 920420 - works as expected; looks like it triggers 2 rules - no host header and unsupported content type
 printf "\nShould return 403\n"
-curl --silent --verbose --header "Content-Type: application/foo" --data "blah" http://localhost:8080/api/pets/1
-# http --verbose http://localhost:8080/api/pets/1 Content-Type:application/foo <<<'blah'
+# curl --silent --verbose --header "Content-Type: application/foo" --data "blah" http://localhost:8080/api/pets/1
+http --verbose http://localhost:8080/api/pets/1 Content-Type:application/foo <<<'blah'
 
 # Rule 913100 - broken
 printf "\nShould return 403\n"
-curl --silent --verbose --header "User-Agent: Mozilla/5.00 (Nikto/2.1.6) (Evasions:None) (Test:000126)" http://localhost:8080/api/pets/1
-# http --verbose http://localhost:8080/api/pets/1 'User-Agent:Mozilla/5.00 (Nikto/2.1.6) (Evasions:None) (Test:000126)'
+# curl --silent --verbose --header "User-Agent: Nikto" http://localhost:8080/api/pets/1
+http --verbose http://localhost:8080/api/pets/1 'User-Agent:Nikto'
+
+# Rule 107 - works as expected based on custom SecRule
+printf "\nShould return 403\n"
+# curl --silent --verbose --header "User-Agent: Scott" http://localhost:8080/api/pets/1
+http --verbose http://localhost:8080/api/pets/1 'User-Agent:Scott'
 
 # Rule 932160 - broken
 printf "\nShould return 403\n"
-curl --silent --verbose 'http://localhost:8080/api/pets/1?exec=/bin/bash'
-# http --verbose 'http://localhost:8080/api/pets/1?exec=/bin/bash'
+# curl --silent --verbose 'http://localhost:8080/api/pets/1?exec=/bin/bash'
+http --verbose 'http://localhost:8080/api/pets/1?exec=/bin/bash'
 
 # Rule 900250 - broken
 printf "\nShould return 403\n"
-curl --silent --verbose --header "proxy: true" 'http://localhost:8080/api/pets/1'
-# http --verbose http://localhost:8080/api/pets/1 proxy:true
+# curl --silent --verbose --header "proxy: true" 'http://localhost:8080/api/pets/1'
+http --verbose http://localhost:8080/api/pets/1 proxy:true
 
 # Rule 900250 (customized in virtual service config) - broken
 printf "\nShould return 403\n"
-curl --silent --verbose --header "bar: baz" 'http://localhost:8080/api/pets/1'
-# http --verbose http://localhost:8080/api/pets/1 bar:baz
+# curl --silent --verbose --header "bar: baz" 'http://localhost:8080/api/pets/1'
+http --verbose http://localhost:8080/api/pets/1 bar:baz
 
 # Rule 942500 - broken
 printf "\nShould return 403\n"
-curl --silent --verbose 'http://localhost:8080/api/pets/1?id=9999+or+{if+length((/*!5000select+username/*!50000from*/user+where+id=1))>0}'
-# http --verbose 'http://localhost:8080/api/pets/1?id=9999+or+{if+length((/*!5000select+username/*!50000from*/user+where+id=1))>0}'
+# curl --silent --verbose 'http://localhost:8080/api/pets/1?id=9999+or+{if+length((/*!5000select+username/*!50000from*/user+where+id=1))>0}'
+http --verbose 'http://localhost:8080/api/pets/1?id=9999+or+{if+length((/*!5000select+username/*!50000from*/user+where+id=1))>0}'
+
+# Rule 930110, 930120, 932160 - broken
+printf "\nShould return 403\n"
+# curl --silent --verbose 'http://localhost:8080/api/pets/1?foo=../etc/passwd'
+http --verbose 'http://localhost:8080/api/pets/1?foo=../etc/passwd'
