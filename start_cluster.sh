@@ -30,9 +30,9 @@ K8S_TOOL=${K8S_TOOL:-kind} # kind, minikube, minishift, gcloud
 
 case $K8S_TOOL in
   kind)
-    if [[ -x $(command -v go) ]] && [[ $(go version) =~ go1.12.[6-9] ]]; then
+    if [[ -x $(command -v go) ]] && [[ $(go version) =~ go1.13 ]]; then
       # Install latest version of kind https://kind.sigs.k8s.io/
-      GO111MODULE='on' go get sigs.k8s.io/kind@v0.4.0
+      GO111MODULE='on' go get sigs.k8s.io/kind@v0.5.1
     fi
 
     DEMO_CLUSTER_NAME=${DEMO_CLUSTER_NAME:-kind}
