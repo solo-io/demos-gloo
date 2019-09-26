@@ -24,9 +24,9 @@ fi
 
 # Install petclinic application
 kubectl --namespace='default' apply \
-  --filename="$SCRIPT_DIR/../resources/petclinic-db.yaml" \
-  --filename="$SCRIPT_DIR/../resources/petclinic.yaml" \
-  --filename="$SCRIPT_DIR/../resources/petclinic-vets.yaml"
+  --filename="$GLOO_DEMO_RESOURCES_HOME/petclinic-db.yaml" \
+  --filename="$GLOO_DEMO_RESOURCES_HOME/petclinic.yaml" \
+  --filename="$GLOO_DEMO_RESOURCES_HOME/petclinic-vets.yaml"
 
 kubectl apply --filename - <<EOF
 apiVersion: gateway.solo.io/v1
@@ -50,7 +50,7 @@ EOF
 
 # Install petstore app to show OpenAPI
 kubectl --namespace='default' apply \
-  --filename "$SCRIPT_DIR/../resources/petstore.yaml"
+  --filename "$GLOO_DEMO_RESOURCES_HOME/petstore.yaml"
 
 # Configure AWS upstreams
 if [ -f ~/scripts/secret/aws_credentials.sh ]; then

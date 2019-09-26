@@ -27,11 +27,11 @@ kubectl --namespace='gloo-system' delete \
   secret/aws
 
 kubectl --namespace='default' delete \
-  --filename="$SCRIPT_DIR/../resources/petstore.yaml"
+  --filename="$GLOO_DEMO_RESOURCES_HOME/petstore.yaml"
 
 kubectl --namespace='gloo-system' delete virtualservice/default
 
 kubectl --namespace='default' delete \
-  --filename="$SCRIPT_DIR/../resources/petclinic-db.yaml" \
-  --filename="$SCRIPT_DIR/../resources/petclinic.yaml" \
-  --filename="$SCRIPT_DIR/../resources/petclinic-vets.yaml"
+  --filename="$GLOO_DEMO_RESOURCES_HOME/petclinic-db.yaml" \
+  --filename="$GLOO_DEMO_RESOURCES_HOME/petclinic.yaml" \
+  --filename="$GLOO_DEMO_RESOURCES_HOME/petclinic-vets.yaml"

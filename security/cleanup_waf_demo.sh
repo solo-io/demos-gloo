@@ -19,5 +19,5 @@ fi
 kubectl --namespace='gloo-system' delete virtualservice/default
 
 kubectl --namespace='default' delete \
-  --filename="$SCRIPT_DIR/../resources/petstore.yaml"
+  --filename="$GLOO_DEMO_RESOURCES_HOME/petstore.yaml"
 

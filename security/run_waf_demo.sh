@@ -29,9 +29,7 @@ fi
 
 # Install example application
 kubectl --namespace='default' apply \
-  --filename="$SCRIPT_DIR/../resources/petstore.yaml"
-# kubectl --namespace='default' apply \
-#   --filename='https://raw.githubusercontent.com/sololabs/demos2/master/resources/petstore.yaml'
+  --filename="$GLOO_DEMO_RESOURCES_HOME/petstore.yaml"
 
 # Cleanup old examples
 kubectl --namespace='gloo-system' delete virtualservice/default && true # ignore errors

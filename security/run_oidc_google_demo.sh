@@ -42,8 +42,8 @@ fi
 
 # Install Petclinic example application
 kubectl --namespace='default' apply \
-  --filename="$SCRIPT_DIR/../resources/petclinic-db.yaml" \
-  --filename="$SCRIPT_DIR/../resources/petclinic.yaml"
+  --filename="$GLOO_DEMO_RESOURCES_HOME/petclinic-db.yaml" \
+  --filename="$GLOO_DEMO_RESOURCES_HOME/petclinic.yaml"
 
 # Cleanup old examples
 kubectl --namespace='gloo-system' delete virtualservice default && true # ignore errors

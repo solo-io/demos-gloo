@@ -24,8 +24,8 @@ kubectl --namespace='gloo-system' delete \
   secret/$K8S_SECRET_NAME
 
 kubectl --namespace='default' delete \
-  --filename="$SCRIPT_DIR/../resources/petclinic-db.yaml" \
-  --filename="$SCRIPT_DIR/../resources/petclinic.yaml"
+  --filename="$GLOO_DEMO_RESOURCES_HOME/petclinic-db.yaml" \
+  --filename="$GLOO_DEMO_RESOURCES_HOME/petclinic.yaml"
 
 DEX_PID_FILE=$SCRIPT_DIR/dex_pf.pid
 if [[ -f $DEX_PID_FILE ]]; then

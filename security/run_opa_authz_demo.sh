@@ -27,7 +27,7 @@ fi
 
 # Install  example application
 kubectl --namespace='default' apply \
-  --filename="$SCRIPT_DIR/../resources/petstore.yaml"
+  --filename="$GLOO_DEMO_RESOURCES_HOME/petstore.yaml"
 
 # Create policy ConfigMap deleting any leftovers from other examples
 POLICY_K8S_CONFIGMAP='allow-get-users'
