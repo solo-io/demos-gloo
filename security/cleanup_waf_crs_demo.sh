@@ -10,19 +10,6 @@ if [[ $K8S_TOOL == 'kind' ]]; then
   export KUBECONFIG
 fi
 
-LOGGER_PID_FILE="$SCRIPT_DIR/logger.pid"
-if [[ -f $LOGGER_PID_FILE ]]; then
-  xargs kill <"$LOGGER_PID_FILE" && true # ignore errors
-  rm "$LOGGER_PID_FILE" "$SCRIPT_DIR/proxy.log"
-fi
-
-# Reset Gloo proxy logging to info
-kubectl --namespace='gloo-system' port-forward deployment/gateway-proxy-v2 19000:19000 >/dev/null 2>&1 &
-PID=$!
-# curl localhost:19000/logging?level=info --request POST >/dev/null
-http POST localhost:19000/logging level==info >/dev/null
-kill "$PID"
-
 PROXY_PID_FILE=$SCRIPT_DIR/proxy_pf.pid
 if [[ -f $PROXY_PID_FILE ]]; then
   xargs kill <"$PROXY_PID_FILE" && true # ignore errors
