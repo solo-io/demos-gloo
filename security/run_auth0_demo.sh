@@ -6,11 +6,20 @@
 
 # brew install kubernetes-cli httpie jq
 
-# Auth0 Configuration
-AUTH0_DOMAIN=
-AUTH0_AUDIENCE=
-AUTH0_CLIENT_ID=
-AUTH0_CLIENT_SECRET=
+# Auth0 Configuration - must set all
+# AUTH0_DOMAIN=''
+# AUTH0_AUDIENCE=''
+# AUTH0_CLIENT_ID=''
+# AUTH0_CLIENT_SECRET=''
+
+# Configure Auth0 Credentials
+if [[ -f ~/scripts/secret/auth0_credentials.sh ]]; then
+  # export AUTH0_DOMAIN='<Auth0 Domain>'
+  # export AUTH0_AUDIENCE='<Auth0 Audience>'
+  # export AUTH0_CLIENT_ID='<Auth0 Client ID>'
+  # export AUTH0_CLIENT_SECRET='<Auth0 Client Secret>'
+  source ~/scripts/secret/auth0_credentials.sh
+fi
 
 # Will exit script if we would use an uninitialised variable:
 set -o nounset
@@ -43,7 +52,7 @@ fi
 kubectl --namespace='default' apply \
   --filename="$GLOO_DEMO_RESOURCES_HOME/petstore.yaml"
 
-UPSTREAM_NAME=auth0
+UPSTREAM_NAME='auth0'
 
 # Cleanup old examples
 kubectl --namespace='gloo-system' delete virtualservice/default upstream/$UPSTREAM_NAME && true # ignore errors
@@ -102,7 +111,7 @@ spec:
 EOF
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-PROXY_PID_FILE=$SCRIPT_DIR/proxy_pf.pid
+PROXY_PID_FILE="$SCRIPT_DIR/proxy_pf.pid"
 if [[ -f $PROXY_PID_FILE ]]; then
   xargs kill <"$PROXY_PID_FILE" && true # ignore errors
   rm "$PROXY_PID_FILE"
@@ -111,7 +120,7 @@ kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy-v2 --w
 ( (kubectl --namespace='gloo-system' port-forward service/gateway-proxy-v2 8080:80 >/dev/null) & echo $! > "$PROXY_PID_FILE" & )
 
 # GLOO_PROXY_URL=$(glooctl proxy url)
-GLOO_PROXY_URL=http://localhost:8080
+GLOO_PROXY_URL='http://localhost:8080'
 
 # Wait for demo application to be fully deployed and running
 kubectl --namespace='default' rollout status deployment/petstore --watch='true'

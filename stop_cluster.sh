@@ -5,7 +5,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 source "$SCRIPT_DIR/working_environment.sh"
 
-if [[ $K8S_TOOL == "kind" ]]; then
+if [[ $K8S_TOOL == 'kind' ]]; then
   KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
   export KUBECONFIG
 fi
@@ -15,7 +15,7 @@ TILLER_MODE=${TILLER_MODE:-local}
 case $TILLER_MODE in
   local)
     # Kill any Tiller process we started
-    TILLER_PID_FILE='/tmp/tiller.pid'
+    TILLER_PID_FILE="$SCRIPT_DIR/tiller.pid"
     if [[ -f $TILLER_PID_FILE ]]; then
       xargs kill < "$TILLER_PID_FILE"
       rm "$TILLER_PID_FILE"

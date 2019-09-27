@@ -124,7 +124,7 @@ unset HELM_HOST
 case $TILLER_MODE in
   local)
     # Run Tiller locally (external) to Kubernetes cluster as it's faster
-    TILLER_PID_FILE='/tmp/tiller.pid'
+    TILLER_PID_FILE="$SCRIPT_DIR/tiller.pid"
     if [[ -f $TILLER_PID_FILE ]]; then
       xargs kill <"$TILLER_PID_FILE" && true # Ignore errors killing old Tiller process
       rm "$TILLER_PID_FILE"

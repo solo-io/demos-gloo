@@ -17,7 +17,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 source "$SCRIPT_DIR/../working_environment.sh"
 
-if [[ $K8S_TOOL == "kind" ]]; then
+if [[ $K8S_TOOL == 'kind' ]]; then
   KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
   export KUBECONFIG
 fi
@@ -53,7 +53,7 @@ kubectl --namespace='default' apply \
   --filename "$GLOO_DEMO_RESOURCES_HOME/petstore.yaml"
 
 # Configure AWS upstreams
-if [ -f ~/scripts/secret/aws_credentials.sh ]; then
+if [[ -f ~/scripts/secret/aws_credentials.sh ]]; then
   # Cleanup old resources
   kubectl --namespace='gloo-system' delete secret/aws upstream/aws && true # ignore errors
 
