@@ -35,6 +35,13 @@ if [[ $K8S_TOOL == "kind" ]]; then
   export KUBECONFIG
 fi
 
+# Configure Auth0 Credentials
+if [[ -f ~/scripts/secret/google_oidc_credentials.sh ]]; then
+# OIDC_CLIENT_ID='<google id>'
+# OIDC_CLIENT_SECRET='<google secret>'
+  source ~/scripts/secret/google_oidc_credentials.sh
+fi
+
 if [[ -z $OIDC_CLIENT_ID ]] || [[ -z $OIDC_CLIENT_SECRET ]]; then
   echo 'Must set OAuth OIDC_CLIENT_ID and OIDC_CLIENT_SECRET environment variables'
   exit

@@ -12,15 +12,6 @@
 # AUTH0_CLIENT_ID=''
 # AUTH0_CLIENT_SECRET=''
 
-# Configure Auth0 Credentials
-if [[ -f ~/scripts/secret/auth0_credentials.sh ]]; then
-  # export AUTH0_DOMAIN='<Auth0 Domain>'
-  # export AUTH0_AUDIENCE='<Auth0 Audience>'
-  # export AUTH0_CLIENT_ID='<Auth0 Client ID>'
-  # export AUTH0_CLIENT_SECRET='<Auth0 Client Secret>'
-  source ~/scripts/secret/auth0_credentials.sh
-fi
-
 # Will exit script if we would use an uninitialised variable:
 set -o nounset
 # Will exit script when a simple command (not a control structure) fails:
@@ -41,6 +32,15 @@ source "$SCRIPT_DIR/../working_environment.sh"
 if [[ $K8S_TOOL == "kind" ]]; then
   KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
   export KUBECONFIG
+fi
+
+# Configure Auth0 Credentials
+if [[ -f ~/scripts/secret/auth0_credentials.sh ]]; then
+  # export AUTH0_DOMAIN='<Auth0 Domain>'
+  # export AUTH0_AUDIENCE='<Auth0 Audience>'
+  # export AUTH0_CLIENT_ID='<Auth0 Client ID>'
+  # export AUTH0_CLIENT_SECRET='<Auth0 Client Secret>'
+  source ~/scripts/secret/auth0_credentials.sh
 fi
 
 if [[ -z $AUTH0_CLIENT_ID ]] || [[ -z $AUTH0_CLIENT_SECRET ]]; then

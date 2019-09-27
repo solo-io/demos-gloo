@@ -23,8 +23,8 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 source "$SCRIPT_DIR/working_environment.sh"
 
-GLOO_ENT_VERSION=0.19.0
-GLOO_OSS_VERSION=0.20.0
+GLOO_ENT_VERSION='0.19.0'
+GLOO_OSS_VERSION='0.20.1'
 
 K8S_TOOL=${K8S_TOOL:-kind} # kind, minikube, minishift, gcloud
 
@@ -51,7 +51,7 @@ case $K8S_TOOL in
     ;;
 
   minikube)
-    DEMO_CLUSTER_NAME="${DEMO_CLUSTER_NAME:-minikube}"
+    DEMO_CLUSTER_NAME=${DEMO_CLUSTER_NAME:-minikube}
 
     # for Mac (can also use Virtual Box)
     # brew install hyperkit; brew cask install minikube
@@ -61,7 +61,11 @@ case $K8S_TOOL in
     # minikube config set memory 4096
 
     minikube delete --profile "$DEMO_CLUSTER_NAME" && true # Ignore errors
-    minikube start --profile "$DEMO_CLUSTER_NAME"
+    minikube start --profile "$DEMO_CLUSTER_NAME" \
+      --cpus=4 \
+      --memory=8192mb \
+      --wait=true \
+      --kubernetes-version='v1.15.4'
 
     source <(minikube docker-env -p "$DEMO_CLUSTER_NAME")
     ;;
@@ -142,7 +146,14 @@ case $TILLER_MODE in
       --clusterrole='cluster-admin' \
       --serviceaccount='kube-system:tiller'
 
-    helm init --service-account='tiller'
+    if [[ $(kubectl version --output json | jq --raw-output '.serverVersion.minor') == '16' ]]; then
+      # Tiller install is broken with Kubernetes 1.16 as Deployment is now `apps/v1`
+      helm init --service-account tiller \
+        --override spec.selector.matchLabels.'name'='tiller',spec.selector.matchLabels.'app'='helm' \
+        --output yaml | sed 's@apiVersion: extensions/v1beta1@apiVersion: apps/v1@' | kubectl apply -f -
+    else
+      helm init --service-account tiller
+    fi
 
     # Wait for tiller to be fully running
     kubectl --namespace='kube-system' rollout status deployment/tiller-deploy --watch='true'

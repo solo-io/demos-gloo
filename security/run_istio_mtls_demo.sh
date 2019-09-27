@@ -124,7 +124,7 @@ spec:
             namespace: gloo-system
 EOF
 
-PROXY_PID_FILE=$SCRIPT_DIR/proxy_pf.pid
+PROXY_PID_FILE="$SCRIPT_DIR/proxy_pf.pid"
 if [[ -f $PROXY_PID_FILE ]]; then
   xargs kill <"$PROXY_PID_FILE" && true # ignore errors
   rm "$PROXY_PID_FILE"
