@@ -29,7 +29,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 source "$SCRIPT_DIR/../working_environment.sh"
 
-if [[ $K8S_TOOL == "kind" ]]; then
+if [[ $K8S_TOOL == 'kind' ]]; then
   KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
   export KUBECONFIG
 fi
@@ -63,31 +63,32 @@ config:
     userID: '123456789-db88-4b73-90a9-3cd1661f5466'
 EOF
 
-# Create policy ConfigMap deleting any leftovers from other examples
 POLICY_K8S_CONFIGMAP='allow-jwt'
-kubectl --namespace='gloo-system' delete configmap "$POLICY_K8S_CONFIGMAP" && true # ignore errors
-kubectl --namespace='gloo-system' create configmap "$POLICY_K8S_CONFIGMAP" --from-file="$SCRIPT_DIR/allow-jwt.rego"
+K8S_SECRET_NAME='my-oauth-secret'
 
-kubectl --namespace='gloo-system' rollout status deployment/dex --watch='true'
+# Cleanup previous example runs
+kubectl --namespace='gloo-system' delete \
+  configmap/"$POLICY_K8S_CONFIGMAP" \
+  secret/"$K8S_SECRET_NAME" \
+  virtualservice/default && true # ignore errors
+
+# Create policy ConfigMap
+kubectl --namespace='gloo-system' create configmap "$POLICY_K8S_CONFIGMAP" --from-file="$SCRIPT_DIR/allow-jwt.rego"
 
 # Start a couple of port-forwards to allow DEX OIDC Provider to work with Gloo
 # Use some Bash magic to keep these scripts re-entrant
-DEX_PID_FILE=$SCRIPT_DIR/dex_pf.pid
+DEX_PID_FILE="$SCRIPT_DIR/dex_pf.pid"
 if [[ -f $DEX_PID_FILE ]]; then
   xargs kill <"$DEX_PID_FILE" && true # ignore errors
   rm "$DEX_PID_FILE"
 fi
-( (kubectl --namespace='gloo-system' port-forward service/dex 32000:32000 >/dev/null) & echo $! > "$DEX_PID_FILE" & )
+kubectl --namespace='gloo-system' rollout status deployment/dex --watch='true'
+( (kubectl --namespace='gloo-system' port-forward service/dex 32000 >/dev/null) & echo $! > "$DEX_PID_FILE" & )
 
 # Install Petclinic example application
 kubectl --namespace='default' apply \
   --filename="$GLOO_DEMO_RESOURCES_HOME/petclinic-db.yaml" \
   --filename="$GLOO_DEMO_RESOURCES_HOME/petclinic.yaml"
-
-# Cleanup old examples
-kubectl --namespace='gloo-system' delete virtualservice default && true # ignore errors
-
-K8S_SECRET_NAME=my-oauth-secret
 
 # glooctl create secret oauth \
 #   --name="$K8S_SECRET_NAME" \
@@ -175,13 +176,12 @@ EOF
 
 # kubectl --namespace gloo-system get virtualservice/default --output yaml
 
-kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy-v2 --watch='true'
-
-PROXY_PID_FILE=$SCRIPT_DIR/proxy_pf.pid
+PROXY_PID_FILE="$SCRIPT_DIR/proxy_pf.pid"
 if [[ -f $PROXY_PID_FILE ]]; then
   xargs kill <"$PROXY_PID_FILE" && true # ignore errors
   rm "$PROXY_PID_FILE"
 fi
+kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy-v2 --watch='true'
 ( (kubectl --namespace='gloo-system' port-forward service/gateway-proxy-v2 8080:80 >/dev/null) & echo $! > "$PROXY_PID_FILE" & )
 
 # Wait for demo application to be fully deployed and running
