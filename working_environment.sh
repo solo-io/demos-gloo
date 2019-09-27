@@ -5,7 +5,7 @@ K8S_TOOL=kind       # kind, minikube, minishift, gcloud
 TILLER_MODE=cluster # local or cluster
 GLOO_MODE=ent       # oss, ent, knative
 
-GLOO_VERSION=0.18.32 # ent
+GLOO_VERSION=0.19.0 # ent
 
 # Create absolute path reference to top level directory of this demo repo
 # GLOO_DEMO_HOME=https://raw.githubusercontent.com/sololabs/demos2/resources

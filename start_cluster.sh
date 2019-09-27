@@ -23,8 +23,8 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 source "$SCRIPT_DIR/working_environment.sh"
 
-GLOO_ENT_VERSION=0.18.32
-GLOO_OSS_VERSION=0.19.2
+GLOO_ENT_VERSION=0.19.0
+GLOO_OSS_VERSION=0.20.0
 
 K8S_TOOL=${K8S_TOOL:-kind} # kind, minikube, minishift, gcloud
 
