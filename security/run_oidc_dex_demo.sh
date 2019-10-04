@@ -140,7 +140,6 @@ metadata:
   name: default
   namespace: gloo-system
 spec:
-  displayName: default
   virtualHost:
     domains:
     - '*'
