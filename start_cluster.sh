@@ -6,6 +6,9 @@
 # Optional
 # brew install go jq openshift-cli; brew cask install minikube minishift
 
+GLOO_ENT_VERSION='0.20.1'
+GLOO_OSS_VERSION='0.20.2'
+
 # Will exit script if we would use an uninitialised variable:
 set -o nounset
 # Will exit script when a simple command (not a control structure) fails:
@@ -22,9 +25,6 @@ trap print_error ERR
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 source "$SCRIPT_DIR/working_environment.sh"
-
-GLOO_ENT_VERSION='0.19.0'
-GLOO_OSS_VERSION='0.20.1'
 
 K8S_TOOL=${K8S_TOOL:-kind} # kind, minikube, minishift, gcloud
 
@@ -182,9 +182,14 @@ case $GLOO_MODE in
     helm repo update
     helm upgrade --install glooe glooe/gloo-ee \
       --namespace='gloo-system' \
-      --set='gloo.gatewayProxies.gatewayProxyV2.readConfig=true' \
-      --set-string="license_key=$GLOOE_LICENSE_KEY" \
-      --version="$GLOO_VERSION"
+      --version="$GLOO_VERSION" \
+      --values - <<EOF
+license_key: $GLOOE_LICENSE_KEY
+gloo:
+  gatewayProxies:
+    gatewayProxyV2:
+      readConfig: true
+EOF
     ;;
 
   oss)
@@ -194,8 +199,13 @@ case $GLOO_MODE in
     helm repo update
     helm upgrade --install gloo gloo/gloo \
       --namespace='gloo-system' \
-      --set='gatewayProxies.gatewayProxyV2.readConfig=true' \
-      --version="$GLOO_VERSION"
+      --version="$GLOO_VERSION" \
+      --values - <<EOF
+gloo:
+  gatewayProxies:
+    gatewayProxyV2:
+      readConfig: true
+EOF
     ;;
 
   knative)
@@ -207,15 +217,10 @@ case $GLOO_MODE in
       gloo/gloo
     helm upgrade --install gloo gloo/gloo \
       --namespace='gloo-system' \
-      --values='gloo/values-knative.yaml' \
-      --version="$GLOO_VERSION"
+      --version="$GLOO_VERSION" \
+      --values='gloo/values-knative.yaml'
     ;;
 
   none)
     ;;
 esac
-
-# Wait for GlooE gateway-proxy to be fully deployed and running
-# kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy-v2 --watch='true'
-
-# kubectl --namespace gloo-system port-forward deploy/gateway-proxy-v2 8080:8080 >/dev/null &
