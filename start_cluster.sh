@@ -7,7 +7,7 @@
 # brew install go jq openshift-cli; brew cask install minikube minishift
 
 GLOO_ENT_VERSION='0.20.1'
-GLOO_OSS_VERSION='0.20.2'
+GLOO_OSS_VERSION='0.20.3'
 
 # Will exit script if we would use an uninitialised variable:
 set -o nounset
