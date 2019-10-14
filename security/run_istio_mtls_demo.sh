@@ -3,24 +3,23 @@
 # Based on Gloo mTLS example
 # https://gloo.solo.io/gloo_integrations/service_mesh/gloo_istio_mtls/
 
-# Will exit script if we would use an uninitialised variable:
-set -o nounset
-# Will exit script when a simple command (not a control structure) fails:
-set -o errexit
+# Will exit script if we would use an uninitialised variable (nounset) or when a
+# simple command (not a control structure) fails (errexit)
+set -eu
 
-function print_error {
+function print_error() {
   read -r line file <<<"$(caller)"
-  echo "An error occurred in line $line of file $file:" >&2
-  sed "${line}q;d" "$file" >&2
+  echo "An error occurred in line ${line} of file ${file}:" >&2
+  sed "${line}q;d" "${file}" >&2
 }
 trap print_error ERR
 
 # Get directory this script is located in to access script local files
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-source "$SCRIPT_DIR/../working_environment.sh"
+source "${SCRIPT_DIR}/../working_environment.sh"
 
-if [[ $K8S_TOOL == "kind" ]]; then
+if [[ "${K8S_TOOL}" == "kind" ]]; then
   KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
   export KUBECONFIG
 fi
@@ -43,7 +42,7 @@ helm upgrade --install istio istio.io/istio \
   --namespace='istio-system'
 
 # Install Bookinfo example app
-kubectl label --overwrite='true' namespace/default istio-injection='enabled' \
+kubectl label --overwrite='true' namespace/default istio-injection='enabled'
 
 kubectl --namespace='default' apply \
   --filename='https://raw.githubusercontent.com/istio/istio/release-1.3/samples/bookinfo/platform/kube/bookinfo.yaml'
@@ -124,12 +123,15 @@ spec:
             namespace: gloo-system
 EOF
 
-PROXY_PID_FILE="$SCRIPT_DIR/proxy_pf.pid"
-if [[ -f $PROXY_PID_FILE ]]; then
-  xargs kill <"$PROXY_PID_FILE" && true # ignore errors
-  rm "$PROXY_PID_FILE"
+PROXY_PID_FILE="${SCRIPT_DIR}/proxy_pf.pid"
+if [[ -f "${PROXY_PID_FILE}" ]]; then
+  xargs kill <"${PROXY_PID_FILE}" && true # ignore errors
+  rm "${PROXY_PID_FILE}"
 fi
 kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy-v2 --watch='true'
-( (kubectl --namespace='gloo-system' port-forward service/gateway-proxy-v2 8080:80 >/dev/null) & echo $! > "$PROXY_PID_FILE" & )
+(
+  (kubectl --namespace='gloo-system' port-forward service/gateway-proxy-v2 8080:80 >/dev/null) &
+  echo $! >"${PROXY_PID_FILE}" &
+)
 
 open 'http://localhost:8080/productpage'

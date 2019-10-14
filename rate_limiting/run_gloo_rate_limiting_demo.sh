@@ -12,24 +12,23 @@ OIDC_ISSUER_URL='http://dex.gloo-system.svc.cluster.local:32000/'
 OIDC_APP_URL='http://localhost:8080/'
 OIDC_CALLBACK_PATH='/callback'
 
-# Will exit script if we would use an uninitialised variable:
-set -o nounset
-# Will exit script when a simple command (not a control structure) fails:
-set -o errexit
+# Will exit script if we would use an uninitialised variable (nounset) or when a
+# simple command (not a control structure) fails (errexit)
+set -eu
 
 function print_error {
   read -r line file <<<"$(caller)"
-  echo "An error occurred in line $line of file $file:" >&2
-  sed "${line}q;d" "$file" >&2
+  echo "An error occurred in line ${line} of file ${file}:" >&2
+  sed "${line}q;d" "${file}" >&2
 }
 trap print_error ERR
 
 # Get directory this script is located in to access script local files
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-source "$SCRIPT_DIR/../working_environment.sh"
+source "${SCRIPT_DIR}/../working_environment.sh"
 
-if [[ $K8S_TOOL == 'kind' ]]; then
+if [[ "${K8S_TOOL}" == 'kind' ]]; then
   KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
   export KUBECONFIG
 fi
@@ -44,11 +43,11 @@ config:
   issuer: http://dex.gloo-system.svc.cluster.local:32000
 
   staticClients:
-  - id: $OIDC_CLIENT_ID
+  - id: ${OIDC_CLIENT_ID}
     redirectURIs:
     - 'http://localhost:8080/callback'
     name: 'GlooApp'
-    secret: $OIDC_CLIENT_SECRET
+    secret: ${OIDC_CLIENT_SECRET}
 
   staticPasswords:
   - email: 'admin@example.com'
@@ -67,28 +66,29 @@ K8S_SECRET_NAME='my-oauth-secret'
 
 # Cleanup previous example runs
 kubectl --namespace='gloo-system' delete \
-  secret/"$K8S_SECRET_NAME" \
-  virtualservice/default && true # ignore errors
+  --ignore-not-found='true' \
+  secret/"${K8S_SECRET_NAME}" \
+  virtualservice/default
 
 # Start a couple of port-forwards to allow DEX OIDC Provider to work with Gloo
 # Use some Bash magic to keep these scripts re-entrant
-DEX_PID_FILE="$SCRIPT_DIR/dex_pf.pid"
-if [[ -f $DEX_PID_FILE ]]; then
-  xargs kill <"$DEX_PID_FILE" && true # ignore errors
-  rm "$DEX_PID_FILE"
+DEX_PID_FILE="${SCRIPT_DIR}/dex_pf.pid"
+if [[ -f "${DEX_PID_FILE}" ]]; then
+  xargs kill <"${DEX_PID_FILE}" && true # ignore errors
+  rm "${DEX_PID_FILE}"
 fi
 kubectl --namespace='gloo-system' rollout status deployment/dex --watch='true'
-( (kubectl --namespace='gloo-system' port-forward service/dex 32000 >/dev/null) & echo $! > "$DEX_PID_FILE" & )
+( (kubectl --namespace='gloo-system' port-forward service/dex 32000 >/dev/null) & echo $! > "${DEX_PID_FILE}" & )
 
 # Install Petclinic example application
 kubectl --namespace='default' apply \
-  --filename="$GLOO_DEMO_RESOURCES_HOME/petclinic-db.yaml" \
-  --filename="$GLOO_DEMO_RESOURCES_HOME/petclinic.yaml"
+  --filename="${GLOO_DEMO_RESOURCES_HOME}/petclinic-db.yaml" \
+  --filename="${GLOO_DEMO_RESOURCES_HOME}/petclinic.yaml"
 
 # glooctl create secret oauth \
-#   --name="$K8S_SECRET_NAME" \
+#   --name="${K8S_SECRET_NAME}" \
 #   --namespace='gloo-system' \
-#   --client-secret="$OIDC_CLIENT_SECRET"
+#   --client-secret="${OIDC_CLIENT_SECRET}"
 
 kubectl apply --filename - <<EOF
 apiVersion: v1
@@ -97,12 +97,12 @@ type: Opaque
 metadata:
   annotations:
     resource_kind: '*v1.Secret'
-  name: $K8S_SECRET_NAME
+  name: ${K8S_SECRET_NAME}
   namespace: gloo-system
 data:
   extension: $(base64 <<EOF2
 config:
-  client_secret: $OIDC_CLIENT_SECRET
+  client_secret: ${OIDC_CLIENT_SECRET}
 EOF2
 )
 EOF
@@ -111,12 +111,12 @@ EOF
 #   --name='default' \
 #   --namespace='gloo-system' \
 #   --enable-oidc-auth \
-#   --oidc-auth-app-url="$OIDC_APP_URL" \
-#   --oidc-auth-callback-path="$OIDC_CALLBACK_PATH" \
-#   --oidc-auth-client-id="$OIDC_CLIENT_ID" \
-#   --oidc-auth-client-secret-name="$K8S_SECRET_NAME" \
+#   --oidc-auth-app-url="${OIDC_APP_URL}" \
+#   --oidc-auth-callback-path="${OIDC_CALLBACK_PATH}" \
+#   --oidc-auth-client-id="${OIDC_CLIENT_ID}" \
+#   --oidc-auth-client-secret-name="${K8S_SECRET_NAME}" \
 #   --oidc-auth-client-secret-namespace='gloo-system' \
-#   --oidc-auth-issuer-url="$OIDC_ISSUER_URL" \
+#   --oidc-auth-issuer-url="${OIDC_ISSUER_URL}" \
 #   --oidc-scope='email'
 
 # glooctl add route \
@@ -162,13 +162,13 @@ spec:
           extauth:
             configs:
             - oauth:
-                app_url: $OIDC_APP_URL
-                callback_path: $OIDC_CALLBACK_PATH
-                client_id: $OIDC_CLIENT_ID
+                app_url: ${OIDC_APP_URL}
+                callback_path: ${OIDC_CALLBACK_PATH}
+                client_id: ${OIDC_CLIENT_ID}
                 client_secret_ref:
-                  name: $K8S_SECRET_NAME
+                  name: ${K8S_SECRET_NAME}
                   namespace: gloo-system
-                issuer_url: $OIDC_ISSUER_URL
+                issuer_url: ${OIDC_ISSUER_URL}
                 scopes:
                 - email
           rate-limit:
@@ -182,13 +182,13 @@ EOF
 
 # kubectl --namespace gloo-system get virtualservice/default --output yaml
 
-PROXY_PID_FILE="$SCRIPT_DIR/proxy_pf.pid"
-if [[ -f $PROXY_PID_FILE ]]; then
-  xargs kill <"$PROXY_PID_FILE" && true # ignore errors
-  rm "$PROXY_PID_FILE"
+PROXY_PID_FILE="${SCRIPT_DIR}/proxy_pf.pid"
+if [[ -f "${PROXY_PID_FILE}" ]]; then
+  xargs kill <"${PROXY_PID_FILE}" && true # ignore errors
+  rm "${PROXY_PID_FILE}"
 fi
 kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy-v2 --watch='true'
-( (kubectl --namespace='gloo-system' port-forward service/gateway-proxy-v2 8080:80 >/dev/null) & echo $! > "$PROXY_PID_FILE" & )
+( (kubectl --namespace='gloo-system' port-forward service/gateway-proxy-v2 8080:80 >/dev/null) & echo $! > "${PROXY_PID_FILE}" & )
 
 # Wait for demo application to be fully deployed and running
 kubectl --namespace='default' rollout status deployment/petclinic --watch='true'
@@ -196,5 +196,5 @@ kubectl --namespace='default' rollout status deployment/petclinic --watch='true'
 # PROXY_URL=$(glooctl proxy url)
 PROXY_URL='http://localhost:8080'
 
-# open "$PROXY_URL"
-open -a "Google Chrome" --new --args --incognito "$PROXY_URL/"
+# open "${PROXY_URL}"
+open -a "Google Chrome" --new --args --incognito "${PROXY_URL}/"
