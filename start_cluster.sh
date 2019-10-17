@@ -112,7 +112,7 @@ case "${K8S_TOOL}" in
       --cluster-version='latest' \
       --machine-type='n1-standard-2' \
       --num-nodes='3' \
-      --labels='creator=scranton'
+      --labels='creator=gloo-demos'
 
     gcloud container clusters get-credentials "${DEMO_CLUSTER_NAME}"
 
@@ -142,7 +142,7 @@ case "${TILLER_MODE}" in
       rm "${TILLER_PID_FILE}"
     fi
     TILLER_PORT=":44134"
-    ( 
+    (
       (tiller --storage='secret' --listen="${TILLER_PORT}") &
       echo $! >"${TILLER_PID_FILE}" &
     )
