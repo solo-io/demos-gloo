@@ -1,59 +1,58 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: petstore
-  namespace: default
+  name: jsonplaceholder
   labels:
-    app: petstore
+    app: jsonplaceholder
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: petstore
+      app: jsonplaceholder
   template:
     metadata:
       labels:
-        app: petstore
+        app: jsonplaceholder
     spec:
       containers:
-      - name: petstore
-        image: quay.io/solo-io/petstore:latest
+      - name: jsonplaceholder
+        image: quay.io/solo-io/jsonplaceholder:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
           name: http
         resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
           requests:
             cpu: 100m
-            memory: 16Mi
-          limits:
-            cpu: 250m
-            memory: 32Mi
+            memory: 128Mi
         livenessProbe:
           httpGet:
-            path: /api/pets
+            path: /posts/1
             port: http
-          initialDelaySeconds: 1
-          periodSeconds: 1
+            scheme: HTTP
+          initialDelaySeconds: 10
         readinessProbe:
           httpGet:
-            path: /api/pets
+            path: /posts/1
             port: http
-          initialDelaySeconds: 1
-          periodSeconds: 1
+            scheme: HTTP
+          initialDelaySeconds: 5
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: petstore
-  namespace: default
+  name: jsonplaceholder
   labels:
-    app: petstore
+    app: jsonplaceholder
 spec:
+  type: ClusterIP
   ports:
   - port: 8080
-    targetPort: 8080
+    targetPort: "http"
     protocol: TCP
     name: http
   selector:
-    app: petstore
+    app: jsonplaceholder

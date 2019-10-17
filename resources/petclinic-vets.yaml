@@ -16,7 +16,7 @@ spec:
         app: petclinic-vets
     spec:
       containers:
-      - image: quay.io/sololabs/petclinic-vets:v3
+      - image: quay.io/solo-io/petclinic-vets:latest
         imagePullPolicy: IfNotPresent
         name: petclinic-vets
         ports:
@@ -43,7 +43,7 @@ spec:
           httpGet:
             path: /
             port: http
-          initialDelaySeconds: 30
+          initialDelaySeconds: 10
           periodSeconds: 10
           timeoutSeconds: 5
           successThreshold: 1
