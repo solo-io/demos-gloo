@@ -8,5 +8,5 @@ GLOO_MODE=ent       # oss, ent, knative
 GLOO_VERSION=0.20.4 # ent
 
 # Create absolute path reference to top level directory of this demo repo
-# GLOO_DEMO_RESOURCES_HOME='https://raw.githubusercontent.com/sololabs/gloo_demos/master/resources'
+# GLOO_DEMO_RESOURCES_HOME='https://raw.githubusercontent.com/solo-io/demos-gloo/master/resources'
 GLOO_DEMO_RESOURCES_HOME=${GLOO_DEMO_RESOURCES_HOME:-"$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)/resources"}
