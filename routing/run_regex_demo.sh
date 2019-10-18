@@ -4,7 +4,7 @@
 # simple command (not a control structure) fails (errexit)
 set -eu
 
-function print_error {
+function print_error() {
   read -r line file <<<"$(caller)"
   echo "An error occurred in line ${line} of file ${file}:" >&2
   sed "${line}q;d" "${file}" >&2
@@ -44,16 +44,21 @@ spec:
         body: "Fail"
 EOF
 
-# PROXY_PID_FILE="${SCRIPT_DIR}/proxy_pf.pid"
-# if [[ -f "${PROXY_PID_FILE}" ]]; then
-#   xargs kill <"${PROXY_PID_FILE}" && true # ignore errors
-#   rm "${PROXY_PID_FILE}"
-# fi
-kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy-v2 --watch=true
-# ( (kubectl --namespace='gloo-system' port-forward deployment/gateway-proxy-v2 8080:8080 >/dev/null) & echo $! > "${PROXY_PID_FILE}" & )
+PROXY_PID_FILE="${SCRIPT_DIR}/proxy_pf.pid"
+if [[ -f "${PROXY_PID_FILE}" ]]; then
+  xargs kill <"${PROXY_PID_FILE}" && true # ignore errors
+  rm "${PROXY_PID_FILE}"
+fi
+kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy-v2 --watch='true'
+(
+  (kubectl --namespace='gloo-system' port-forward deployment/gateway-proxy-v2 8080:8080 >/dev/null) &
+  echo $! >"${PROXY_PID_FILE}" &
+)
 
-PROXY_URL=$(glooctl proxy url)
-# PROXY_URL='http://localhost:8080'
+sleep 2
+
+# PROXY_URL=$(glooctl proxy url)
+PROXY_URL='http://localhost:8080'
 
 printf "\nShould work\n"
 curl "${PROXY_URL}/posts"

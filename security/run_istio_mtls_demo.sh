@@ -25,8 +25,7 @@ if [[ "${K8S_TOOL}" == "kind" ]]; then
 fi
 
 # Install Istio
-# helm repo add istio.io 'https://storage.googleapis.com/istio-release/releases/1.2.4/charts/'
-helm repo add istio.io 'https://storage.googleapis.com/istio-release/releases/1.3.0/charts/'
+helm repo add istio.io 'https://storage.googleapis.com/istio-release/releases/1.3.3/charts/'
 
 # Install Istio CRDs
 helm upgrade --install istio-init istio.io/istio-init \
