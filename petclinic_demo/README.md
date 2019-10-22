@@ -1,12 +1,13 @@
 # Spring Petclinic demo
 
+These examples assume you are running a locally accessible Kubernetes cluster, i.e. `kubectl` can access the cluster. You can use the [`../start_cluster.sh`](../start_cluster.sh) to start a Kubernetes cluster.
+
+All included `run_xxx_demo.sh` scripts are paired with a `cleanup_xxx_demo.sh` script that will remove all installed assets used by the demo.
+
 ## Start demo
 
-    ./run_petclinic_demo.sh
-
-This will create a new `kind` cluster, install GlooE and petclinic application, and
-open up web browser pages to GlooE console and PetClinic home page. It also installs
-petstore (OpenAPI service) and AWS upstreams.
+* `./run_petclinic_demo.sh` - starts the "standard" Gloo Petclinic demo
+* `./run_oidc_petclinic_demo.sh` - starts the Petclinic demo whose home page is protected by a local OpenID Connect provider DEX.
 
 ## Script
 
