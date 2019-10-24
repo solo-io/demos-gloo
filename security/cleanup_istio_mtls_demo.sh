@@ -71,3 +71,5 @@ kubectl patch namespace/default \
 
 helm delete --purge istio
 helm delete --purge istio-init
+
+kubectl delete namespace istio-system
