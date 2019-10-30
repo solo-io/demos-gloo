@@ -58,7 +58,8 @@ kubectl --namespace='gloo-system' patch deployment/gateway-proxy-v2 \
 
 kubectl --namespace='default' delete \
   --ignore-not-found='true' \
-  --filename='https://raw.githubusercontent.com/istio/istio/release-1.3/samples/bookinfo/platform/kube/bookinfo.yaml'
+  --filename='https://raw.githubusercontent.com/istio/istio/release-1.3/samples/bookinfo/platform/kube/bookinfo.yaml' \
+  --filename='https://raw.githubusercontent.com/istio/istio/release-1.3/samples/bookinfo/networking/destination-rule-all-mtls.yaml'
 
 kubectl patch namespace/default \
   --type='json' \

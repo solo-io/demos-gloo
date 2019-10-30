@@ -70,7 +70,7 @@ kubectl --namespace='default' apply \
   --filename='https://raw.githubusercontent.com/istio/istio/release-1.3/samples/bookinfo/platform/kube/bookinfo.yaml' \
   --filename='https://raw.githubusercontent.com/istio/istio/release-1.3/samples/bookinfo/networking/destination-rule-all-mtls.yaml'
 
-kubectl --namespace='gloo-system' get deployment/gateway-proxy-v2 --output='json' > gateway-original.json
+# kubectl --namespace='gloo-system' get deployment/gateway-proxy-v2 --output='json' > gateway-original.json
 
 # Patch Gateway Proxy to reference Istio SDS over Unix Domain Sockets
 kubectl --namespace='gloo-system' patch deployment/gateway-proxy-v2 \
@@ -124,7 +124,7 @@ kubectl --namespace='gloo-system' patch deployment/gateway-proxy-v2 \
   }
 ]'
 
-kubectl --namespace='gloo-system' get deployment/gateway-proxy-v2 --output='json' > gateway-modified.json
+# kubectl --namespace='gloo-system' get deployment/gateway-proxy-v2 --output='json' > gateway-modified.json
 
 kubectl --namespace='default' rollout status deployment/productpage-v1 --watch='true'
 
