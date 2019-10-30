@@ -2,7 +2,7 @@
 
 ## Security Overview
 
-This directory includes a number of Gloo security examples including Authentication, Authorization, Web Application Firewall, and mTLS.
+This directory includes a number of Gloo security examples including Authentication, Authorization, and Web Application Firewall.
 
 These examples assume you are running a locally accessible Kubernetes cluster, i.e. `kubectl` can access the cluster. You can use the [`../start_cluster.sh`](../start_cluster.sh) to start a Kubernetes cluster.
 
@@ -23,7 +23,3 @@ All included `run_xxx_demo.sh` scripts are paired with a `cleanup_xxx_demo.sh` s
 ### Web Application Firewall (WAF)
 
 * `run_waf_demo.sh` - shows using Gloo's integration of ModSecurity to act as a WAF
-
-### Security integration
-
-* `run_istio_mtls_demo.sh` - shows Gloo coordination with Istio SDS to enable mTLS between Gloo proxy(s) and upstream services protected by Istio sidecars

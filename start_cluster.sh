@@ -8,8 +8,8 @@
 # Optional
 # brew install go jq openshift-cli; brew cask install minikube minishift
 
-GLOO_ENT_VERSION='0.20.4'
-GLOO_OSS_VERSION='0.20.6'
+GLOO_ENT_VERSION='0.20.6'
+GLOO_OSS_VERSION='0.20.11'
 
 # Will exit script if we would use an uninitialised variable (nounset) or when a
 # simple command (not a control structure) fails (errexit)

@@ -2,10 +2,10 @@
 # shellcheck disable=SC2034
 
 K8S_TOOL=minikube   # kind, minikube, minishift, gcloud
-TILLER_MODE=cluster # local or cluster
+TILLER_MODE=cluster # local, cluster, none
 GLOO_MODE=ent       # oss, ent, knative
 
-GLOO_VERSION=0.20.4 # ent
+GLOO_VERSION=0.20.6 # ent
 
 # Create absolute path reference to top level directory of this demo repo
 # GLOO_DEMO_RESOURCES_HOME='https://raw.githubusercontent.com/solo-io/demos-gloo/master/resources'

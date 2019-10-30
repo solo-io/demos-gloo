@@ -28,12 +28,6 @@ spec:
           requests:
             cpu: 100m
             memory: 128Mi
-        livenessProbe:
-          httpGet:
-            path: /posts/1
-            port: http
-            scheme: HTTP
-          initialDelaySeconds: 10
         readinessProbe:
           httpGet:
             path: /posts/1

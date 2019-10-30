@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2034
 
-# Based on GlooE JWT Access Control except using Auth0
+# Based on GlooE JWT Access Control except using Auth0 with Client Credential Flow
 # https://gloo.solo.io/gloo_routing/virtual_services/security/jwt/access_control/
 
 # brew install kubernetes-cli httpie jq
