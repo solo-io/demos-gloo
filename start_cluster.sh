@@ -27,7 +27,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
 source "${SCRIPT_DIR}/working_environment.sh"
 
-K8S_TOOL="${K8S_TOOL:-kind}" # kind, minikube, minishift, gcloud
+K8S_TOOL="${K8S_TOOL:-kind}" # kind, minikube, minishift, gcloud, custom
 
 case "${K8S_TOOL}" in
   kind)
@@ -109,7 +109,6 @@ case "${K8S_TOOL}" in
 
     gcloud container clusters delete "${DEMO_CLUSTER_NAME}" --quiet && true # Ignore errors
     gcloud container clusters create "${DEMO_CLUSTER_NAME}" \
-      --cluster-version='latest' \
       --machine-type='n1-standard-2' \
       --num-nodes='3' \
       --labels='creator=gloo-demos'
@@ -120,6 +119,9 @@ case "${K8S_TOOL}" in
       --clusterrole='cluster-admin' \
       --user="$(gcloud config get-value account)"
     ;;
+
+  custom) ;;
+
 esac
 
 # Tell skaffold how to connect to local Kubernetes cluster running in
@@ -142,10 +144,8 @@ case "${TILLER_MODE}" in
       rm "${TILLER_PID_FILE}"
     fi
     TILLER_PORT=":44134"
-    (
-      (tiller --storage='secret' --listen="${TILLER_PORT}") &
-      echo $! >"${TILLER_PID_FILE}" &
-    )
+    tiller --storage='secret' --listen="${TILLER_PORT}" &
+    echo $! >"${TILLER_PID_FILE}"
     export HELM_HOST="${TILLER_PORT}"
     ;;
 
@@ -157,17 +157,7 @@ case "${TILLER_MODE}" in
       --clusterrole='cluster-admin' \
       --serviceaccount='kube-system:tiller'
 
-    if [[ "$(kubectl version --output json |
-      jq --raw-output '.serverVersion.minor')" == '16' ]]; then
-      # Tiller install is broken with Kubernetes 1.16 as Deployment is now `apps/v1`
-      helm init --service-account tiller \
-        --override spec.selector.matchLabels.'name'='tiller',spec.selector.matchLabels.'app'='helm' \
-        --output yaml |
-        sed 's@apiVersion: extensions/v1beta1@apiVersion: apps/v1@' |
-        kubectl apply -f -
-    else
-      helm init --service-account tiller
-    fi
+    helm init --service-account tiller
 
     # Wait for tiller to be fully running
     kubectl --namespace='kube-system' rollout status deployment/tiller-deploy \
@@ -177,6 +167,28 @@ case "${TILLER_MODE}" in
   none) ;;
 
 esac
+
+function wait_for_k8s_metrics_server() {
+  # Hack to deal with delay in gcloud and other k8s clusters not starting
+  # metrics server fast enough for helm
+  K8S_PROXY_PID_FILE="${SCRIPT_DIR}/k8s_proxy_pf.pid"
+  if [[ -f "${K8S_PROXY_PID_FILE}" ]]; then
+    xargs kill <"${K8S_PROXY_PID_FILE}" && true # ignore errors
+    rm "${K8S_PROXY_PID_FILE}"
+  fi
+
+  kubectl proxy --port 8001 >/dev/null &
+  echo $! >"${K8S_PROXY_PID_FILE}"
+
+  until curl --fail 'http://localhost:8001/apis/metrics.k8s.io/v1beta1/'; do
+    sleep 5
+  done
+
+  if [[ -f "${K8S_PROXY_PID_FILE}" ]]; then
+    xargs kill <"${K8S_PROXY_PID_FILE}" && true # ignore errors
+    rm "${K8S_PROXY_PID_FILE}"
+  fi
+}
 
 GLOO_MODE="${GLOO_MODE:-oss}" # oss, ent, knative, none
 
@@ -192,6 +204,9 @@ case "${GLOO_MODE}" in
       echo 'You must set GLOOE_LICENSE_KEY with GlooE activation key'
       exit
     fi
+
+    # Helm depends on access to k8s metrics server
+    wait_for_k8s_metrics_server
 
     helm repo add glooe 'http://storage.googleapis.com/gloo-ee-helm'
     helm repo update
@@ -210,6 +225,9 @@ EOF
   oss)
     GLOO_VERSION="${GLOO_VERSION:-$GLOO_OSS_VERSION}"
 
+    # Helm depends on access to k8s metrics server
+    wait_for_k8s_metrics_server
+
     helm repo add gloo 'https://storage.googleapis.com/solo-public-helm'
     helm repo update
     helm upgrade --install gloo gloo/gloo \
@@ -225,6 +243,9 @@ EOF
 
   knative)
     GLOO_VERSION="${GLOO_VERSION:-$GLOO_OSS_VERSION}"
+
+    # Helm depends on access to k8s metrics server
+    wait_for_k8s_metrics_server
 
     helm repo add gloo 'https://storage.googleapis.com/solo-public-helm'
     helm repo update
