@@ -3,29 +3,24 @@
 # Starts up a Kubernetes clusterbased on settings in working_environment.sh
 
 # Expects
-# brew install kubernetes-cli kubernetes-helm skaffold httpie
+# brew install kubernetes-cli kubernetes-helm skaffold
 
 # Optional
-# brew install go jq openshift-cli; brew cask install minikube minishift
+# brew install go openshift-cli; brew cask install minikube minishift
 
 GLOO_ENT_VERSION='0.20.6'
-GLOO_OSS_VERSION='0.20.11'
+GLOO_OSS_VERSION='0.20.12'
+
+# Get directory this script is located in to access script local files
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+
+source "${SCRIPT_DIR}/common_scripts.sh"
+source "${SCRIPT_DIR}/working_environment.sh"
 
 # Will exit script if we would use an uninitialised variable (nounset) or when a
 # simple command (not a control structure) fails (errexit)
 set -eu
-
-function print_error() {
-  read -r line file <<<"$(caller)"
-  echo "An error occurred in line ${line} of file ${file}:" >&2
-  sed "${line}q;d" "${file}" >&2
-}
 trap print_error ERR
-
-# Get directory this script is located in to access script local files
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-
-source "${SCRIPT_DIR}/working_environment.sh"
 
 K8S_TOOL="${K8S_TOOL:-kind}" # kind, minikube, minishift, gcloud, custom
 
@@ -118,6 +113,10 @@ case "${K8S_TOOL}" in
     kubectl create clusterrolebinding cluster-admin-binding \
       --clusterrole='cluster-admin' \
       --user="$(gcloud config get-value account)"
+
+    # Helm requires metrics API to be available, and GKE can be slow to start that
+    wait_for_k8s_metrics_server
+
     ;;
 
   custom) ;;
@@ -131,7 +130,7 @@ if [[ -x "$(command -v skaffold)" ]]; then
     local-cluster true
 fi
 
-TILLER_MODE="${TILLER_MODE:-local}" # local, cluster, none
+TILLER_MODE="${TILLER_MODE:-cluster}" # local, cluster, none
 
 unset HELM_HOST
 
@@ -168,29 +167,7 @@ case "${TILLER_MODE}" in
 
 esac
 
-function wait_for_k8s_metrics_server() {
-  # Hack to deal with delay in gcloud and other k8s clusters not starting
-  # metrics server fast enough for helm
-  K8S_PROXY_PID_FILE="${SCRIPT_DIR}/k8s_proxy_pf.pid"
-  if [[ -f "${K8S_PROXY_PID_FILE}" ]]; then
-    xargs kill <"${K8S_PROXY_PID_FILE}" && true # ignore errors
-    rm "${K8S_PROXY_PID_FILE}"
-  fi
-
-  kubectl proxy --port 8001 >/dev/null &
-  echo $! >"${K8S_PROXY_PID_FILE}"
-
-  until curl --fail 'http://localhost:8001/apis/metrics.k8s.io/v1beta1/'; do
-    sleep 5
-  done
-
-  if [[ -f "${K8S_PROXY_PID_FILE}" ]]; then
-    xargs kill <"${K8S_PROXY_PID_FILE}" && true # ignore errors
-    rm "${K8S_PROXY_PID_FILE}"
-  fi
-}
-
-GLOO_MODE="${GLOO_MODE:-oss}" # oss, ent, knative, none
+GLOO_MODE="${GLOO_MODE:-ent}" # oss, ent, knative, none
 
 case "${GLOO_MODE}" in
   ent)
@@ -205,47 +182,28 @@ case "${GLOO_MODE}" in
       exit
     fi
 
-    # Helm depends on access to k8s metrics server
-    wait_for_k8s_metrics_server
-
     helm repo add glooe 'http://storage.googleapis.com/gloo-ee-helm'
     helm repo update
     helm upgrade --install glooe glooe/gloo-ee \
       --namespace='gloo-system' \
       --version="${GLOO_VERSION}" \
-      --values - <<EOF
-license_key: ${GLOOE_LICENSE_KEY}
-gloo:
-  gatewayProxies:
-    gatewayProxyV2:
-      readConfig: true
-EOF
+      --set="license_key=${GLOOE_LICENSE_KEY}" \
+      --set="gloo.gatewayProxies.gatewayProxyV2.readConfig=true"
     ;;
 
   oss)
     GLOO_VERSION="${GLOO_VERSION:-$GLOO_OSS_VERSION}"
-
-    # Helm depends on access to k8s metrics server
-    wait_for_k8s_metrics_server
 
     helm repo add gloo 'https://storage.googleapis.com/solo-public-helm'
     helm repo update
     helm upgrade --install gloo gloo/gloo \
       --namespace='gloo-system' \
       --version="${GLOO_VERSION}" \
-      --values - <<EOF
-gloo:
-  gatewayProxies:
-    gatewayProxyV2:
-      readConfig: true
-EOF
+      --set="gloo.gatewayProxies.gatewayProxyV2.readConfig=true"
     ;;
 
   knative)
     GLOO_VERSION="${GLOO_VERSION:-$GLOO_OSS_VERSION}"
-
-    # Helm depends on access to k8s metrics server
-    wait_for_k8s_metrics_server
 
     helm repo add gloo 'https://storage.googleapis.com/solo-public-helm'
     helm repo update

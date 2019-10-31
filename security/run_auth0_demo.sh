@@ -12,23 +12,18 @@
 # AUTH0_CLIENT_ID=''
 # AUTH0_CLIENT_SECRET=''
 
+# Get directory this script is located in to access script local files
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+
+source "${SCRIPT_DIR}/../common_scripts.sh"
+source "${SCRIPT_DIR}/../working_environment.sh"
+
 # Will exit script if we would use an uninitialised variable (nounset) or when a
 # simple command (not a control structure) fails (errexit)
 set -eu
-
-function print_error() {
-  read -r line file <<<"$(caller)"
-  echo "An error occurred in line ${line} of file ${file}:" >&2
-  sed "${line}q;d" "${file}" >&2
-}
 trap print_error ERR
 
-# Get directory this script is located in to access script local files
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-
-source "${SCRIPT_DIR}/../working_environment.sh"
-
-if [[ "${K8S_TOOL}" == "kind" ]]; then
+if [[ "${K8S_TOOL}" == 'kind' ]]; then
   KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
   export KUBECONFIG
 fi
@@ -113,16 +108,7 @@ spec:
 EOF
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-PROXY_PID_FILE="${SCRIPT_DIR}/proxy_pf.pid"
-if [[ -f "${PROXY_PID_FILE}" ]]; then
-  xargs kill <"${PROXY_PID_FILE}" && true # ignore errors
-  rm "${PROXY_PID_FILE}"
-fi
-kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy-v2 --watch='true'
-(
-  (kubectl --namespace='gloo-system' port-forward service/gateway-proxy-v2 8080:80 >/dev/null) &
-  echo $! >"${PROXY_PID_FILE}" &
-)
+port_forward_deployment 'gloo-system' 'gateway-proxy-v2' '8080'
 
 # GLOO_PROXY_URL=$(glooctl proxy url)
 GLOO_PROXY_URL='http://localhost:8080'
@@ -160,8 +146,10 @@ printf "\nShould return 200 OK\n"
 #   "${GLOO_PROXY_URL}/api/pets"
 http "${GLOO_PROXY_URL}/api/pets" "authorization:Bearer ${AUTH0_TOKEN}"
 
+# printf "Auth0 Token = %s" "${AUTH0_TOKEN}"
+
 printf "\nShould return 401 Unauthorized\n"
-TAMPERED_AUTH0_TOKEN='eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6IlFrSkZSRUkyT0RkR1FrWkRPRU13TUVRNVFVUXdRVEUxUmpoRk9FSXpRVEpCTkVGQlFrSkROdyJ9.eyJpc3MiOiJodHRwczovL3NvbG9sYWJzLmF1dGgwLmNvbS8iLCJzdWIiOiJxWU02eVkwb0VKSGtpUmY1dW5tYmRNTDFkNGtkdmxHMkBjbGllbnRzIiwiYXVkIjoiL3BldHN0b3JlIiwiaWF0IjoxNTY5NTMyMTc4LCJleHAiOjE1Njk2MTg1NzgsImF6cCI6InFZTTZ5WTBvRUpIa2lSZjV1bm1jZE1MMWQ0a2R2bEcyIiwiZ3R5IjoiY2xpZW50LWNyZWRlbnRpYWxzIn0.obDoH14utNKOs2DWcPN_HlnmhcYlo94upQtwBZiEs903-vjRSrMt2ZPXwLq9ukxcmSH40TciPJIsKEyydt8Y9dOf2tqwNZC67pq8lPQ1MnvLhBAacg0cfykSwmgVl4nAzGYFX8s7wqBG3XdE6L4xgbPNtsgyyq6r0NnEK5oQyasi7GnKdlZE3-NJg1btGT7qVSD30aQFxIFVEFddeCWfwjb6w5dzuP0InIDF3J0e2EPGlX14q20tduBz-csbwNldjXPrK6PTmuNIXZwKjLeHdC85BGETrJmVFTgiXvYRKeFXp7t-zovdGg3ZPjbJl8f0tp0wB-rHrPbtkuI7a7gNBA'
+TAMPERED_AUTH0_TOKEN='eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6IlFrSkZSRUkyT0RkR1FrWkRPRU13TUVRNVFVUXdRVEUxUmpoRk9FSXpRVEpCTkVGQlFrSkROdyJ9.eyJpc3NiOiJodHRwczovL3NvbG9sYWJzLmF1dGgwLmNvbS8iLCJzdWIiOiJxWU02eVkwb0VKSGtpUmY1dW5tYmRNTDFkNGtkdmxHMkBjbGllbnRzIiwiYXVkIjoiL3BldHN0b3JlIiwiaWF0IjoxNTcyNDUzMjIzLCJleHAiOjE1NzI1Mzk2MjMsImF6cCI6InFZTTZ5WTBvRUpIa2lSZjV1bm1iZE1MMWQ0a2R2bEcyIiwiZ3R5IjoiY2xpZW50LWNyZWRlbnRpYWxzIn0.aNoIvX1M4_3PqCc5DGZWp2dHmiRGqZUZ_CZHyWcvd_iTA2WXIlJRV55b822HB7G8AHOIrrNzFwdQEb4TtH9KGa13lE28OezCSvlua_7pXzq_B_0RhxEbLFILDZceFmXSD09dXczrSv-tQhJNBPMUC2y-WOYqaRfavhr9vS6_7saNg7F5c9-7Ay7sI8O13-LgvN9nPJAPMe3xKen-WCK0xbAeyVmrWh7yuNK9bPW14Ga1xfDbhh8bMouGh57P7bOhY_v65HeIsKYszTH_WWpZ5XO9GRDrkyY6Yeba0PbujmINkoP8hE7xQ9zPNRUPj0oGPPPptOLG87j8Tye3YkoROw'
 # curl --verbose --silent \
 #   --header "authorization: Bearer ${TAMPERED_AUTH0_TOKEN}" \
 #   "${GLOO_PROXY_URL}/api/pets"

@@ -13,23 +13,18 @@ OIDC_ISSUER_URL='https://accounts.google.com/'
 OIDC_APP_URL='http://localhost:8080/'
 OIDC_CALLBACK_PATH='/callback'
 
+# Get directory this script is located in to access script local files
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+
+source "${SCRIPT_DIR}/../common_scripts.sh"
+source "${SCRIPT_DIR}/../working_environment.sh"
+
 # Will exit script if we would use an uninitialised variable (nounset) or when a
 # simple command (not a control structure) fails (errexit)
 set -eu
-
-function print_error() {
-  read -r line file <<<"$(caller)"
-  echo "An error occurred in line ${line} of file ${file}:" >&2
-  sed "${line}q;d" "${file}" >&2
-}
 trap print_error ERR
 
-# Get directory this script is located in to access script local files
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-
-source "${SCRIPT_DIR}/../working_environment.sh"
-
-if [[ "${K8S_TOOL}" == "kind" ]]; then
+if [[ "${K8S_TOOL}" == 'kind' ]]; then
   KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
   export KUBECONFIG
 fi
@@ -137,17 +132,8 @@ EOF
 
 # kubectl --namespace gloo-system get virtualservice/default --output yaml
 
-kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy-v2 --watch='true'
-
-PROXY_PID_FILE="${SCRIPT_DIR}/proxy_pf.pid"
-if [[ -f "${PROXY_PID_FILE}" ]]; then
-  xargs kill <"${PROXY_PID_FILE}" && true # ignore errors
-  rm "${PROXY_PID_FILE}"
-fi
-(
-  (kubectl --namespace='gloo-system' port-forward service/gateway-proxy-v2 8080:80 >/dev/null) &
-  echo $! >"${PROXY_PID_FILE}" &
-)
+# Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
+port_forward_deployment 'gloo-system' 'gateway-proxy-v2' '8080'
 
 # Wait for demo application to be fully deployed and running
 kubectl --namespace='default' rollout status deployment/petclinic --watch='true'

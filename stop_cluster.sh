@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
 # Get directory this script is located in to access script local files
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
+source "${SCRIPT_DIR}/common_scripts.sh"
 source "${SCRIPT_DIR}/working_environment.sh"
 
 if [[ "${K8S_TOOL}" == 'kind' ]]; then
@@ -10,7 +11,7 @@ if [[ "${K8S_TOOL}" == 'kind' ]]; then
   export KUBECONFIG
 fi
 
-TILLER_MODE="${TILLER_MODE:-local}"
+TILLER_MODE="${TILLER_MODE:-cluster}"
 
 case "${TILLER_MODE}" in
   local)
@@ -35,28 +36,23 @@ K8S_TOOL="${K8S_TOOL:-kind}"
 
 case "${K8S_TOOL}" in
   kind)
-    DEMO_CLUSTER_NAME="${DEMO_CLUSTER_NAME:-kind}"
-
     unset KUBECONFIG
 
-    kind delete cluster --name="${DEMO_CLUSTER_NAME}"
+    kind delete cluster --name="${DEMO_CLUSTER_NAME:-kind}"
     ;;
 
   minikube)
-    DEMO_CLUSTER_NAME="${DEMO_CLUSTER_NAME:-minikube}"
-
-    minikube delete --profile="${DEMO_CLUSTER_NAME}" && true # Ignore errors
+    minikube delete --profile="${DEMO_CLUSTER_NAME:-minikube}"
     ;;
 
   minishift)
-    DEMO_CLUSTER_NAME="${DEMO_CLUSTER_NAME:-minishift}"
-
-    minishift delete --profile="${DEMO_CLUSTER_NAME}" --force && true # Ignore errors
+    minishift delete --profile="${DEMO_CLUSTER_NAME:-minishift}" --force
     ;;
 
   gcloud)
-    DEMO_CLUSTER_NAME="${DEMO_CLUSTER_NAME:-gke-gloo}"
-
-    gcloud container clusters delete "${DEMO_CLUSTER_NAME}" --quiet && true # Ignore errors
+    gcloud container clusters delete "${DEMO_CLUSTER_NAME:-gke-gloo}" --quiet
     ;;
+
+  custom) ;;
+
 esac

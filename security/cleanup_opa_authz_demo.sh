@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
 # Get directory this script is located in to access script local files
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
+source "${SCRIPT_DIR}/../common_scripts.sh"
 source "${SCRIPT_DIR}/../working_environment.sh"
 
 if [[ "${K8S_TOOL}" == "kind" ]]; then
@@ -12,11 +13,7 @@ fi
 
 POLICY_K8S_CONFIGMAP='allow-get-users'
 
-PROXY_PID_FILE="${SCRIPT_DIR}/proxy_pf.pid"
-if [[ -f "${PROXY_PID_FILE}" ]]; then
-  xargs kill <"${PROXY_PID_FILE}" && true # ignore errors
-  rm "${PROXY_PID_FILE}"
-fi
+cleanup_port_forward_deployment 'gateway-proxy-v2'
 
 kubectl --namespace='gloo-system' delete \
   --ignore-not-found='true' \

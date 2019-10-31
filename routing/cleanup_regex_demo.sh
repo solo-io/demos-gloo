@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034
 
 # Get directory this script is located in to access script local files
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
@@ -11,16 +12,8 @@ if [[ "${K8S_TOOL}" == "kind" ]]; then
   export KUBECONFIG
 fi
 
-K8S_SECRET_NAME='my-oauth-secret'
-
 cleanup_port_forward_deployment 'gateway-proxy-v2'
 
 kubectl --namespace='gloo-system' delete \
   --ignore-not-found='true' \
-  virtualservice/default \
-  secret/"${K8S_SECRET_NAME}"
-
-kubectl --namespace='default' delete \
-  --ignore-not-found='true' \
-  --filename="${GLOO_DEMO_RESOURCES_HOME}/petclinic-db.yaml" \
-  --filename="${GLOO_DEMO_RESOURCES_HOME}/petclinic.yaml"
+  virtualservice/default

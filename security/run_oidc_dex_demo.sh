@@ -12,21 +12,16 @@ OIDC_ISSUER_URL='http://dex.gloo-system.svc.cluster.local:32000/'
 OIDC_APP_URL='http://localhost:8080/'
 OIDC_CALLBACK_PATH='/callback'
 
+# Get directory this script is located in to access script local files
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+
+source "${SCRIPT_DIR}/../common_scripts.sh"
+source "${SCRIPT_DIR}/../working_environment.sh"
+
 # Will exit script if we would use an uninitialised variable (nounset) or when a
 # simple command (not a control structure) fails (errexit)
 set -eu
-
-function print_error() {
-  read -r line file <<<"$(caller)"
-  echo "An error occurred in line ${line} of file ${file}:" >&2
-  sed "${line}q;d" "${file}" >&2
-}
 trap print_error ERR
-
-# Get directory this script is located in to access script local files
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-
-source "${SCRIPT_DIR}/../working_environment.sh"
 
 if [[ "${K8S_TOOL}" == 'kind' ]]; then
   KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
@@ -39,6 +34,8 @@ helm upgrade --install dex stable/dex \
   --namespace='gloo-system' \
   --wait \
   --values - <<EOF
+grpc: false
+
 config:
   issuer: http://dex.gloo-system.svc.cluster.local:32000
 
@@ -76,18 +73,8 @@ kubectl --namespace='gloo-system' delete \
 kubectl --namespace='gloo-system' create configmap "${POLICY_K8S_CONFIGMAP}" \
   --from-file="${SCRIPT_DIR}/allow-jwt.rego"
 
-# Start a couple of port-forwards to allow DEX OIDC Provider to work with Gloo
-# Use some Bash magic to keep these scripts re-entrant
-DEX_PID_FILE="${SCRIPT_DIR}/dex_pf.pid"
-if [[ -f "${DEX_PID_FILE}" ]]; then
-  xargs kill <"${DEX_PID_FILE}" && true # ignore errors
-  rm "${DEX_PID_FILE}"
-fi
-kubectl --namespace='gloo-system' rollout status deployment/dex --watch='true'
-(
-  (kubectl --namespace='gloo-system' port-forward service/dex 32000 >/dev/null) &
-  echo $! >"${DEX_PID_FILE}" &
-)
+# Start port-forwards to allow DEX OIDC Provider to work with Gloo
+port_forward_deployment 'gloo-system' 'dex' '32000:5556'
 
 # Install Petclinic example application
 kubectl --namespace='default' apply \
@@ -180,16 +167,8 @@ EOF
 
 # kubectl --namespace gloo-system get virtualservice/default --output yaml
 
-PROXY_PID_FILE="${SCRIPT_DIR}/proxy_pf.pid"
-if [[ -f "${PROXY_PID_FILE}" ]]; then
-  xargs kill <"${PROXY_PID_FILE}" && true # ignore errors
-  rm "${PROXY_PID_FILE}"
-fi
-kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy-v2 --watch='true'
-(
-  (kubectl --namespace='gloo-system' port-forward service/gateway-proxy-v2 8080:80 >/dev/null) &
-  echo $! >"${PROXY_PID_FILE}" &
-)
+# Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
+port_forward_deployment 'gloo-system' 'gateway-proxy-v2' '8080'
 
 # Wait for demo application to be fully deployed and running
 kubectl --namespace='default' rollout status deployment/petclinic --watch='true'
