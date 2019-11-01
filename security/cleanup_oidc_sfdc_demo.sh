@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 source "${SCRIPT_DIR}/../common_scripts.sh"
 source "${SCRIPT_DIR}/../working_environment.sh"
 
-if [[ "${K8S_TOOL}" == 'kind' ]]; then
+if [[ "${K8S_TOOL}" == "kind" ]]; then
   KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
   export KUBECONFIG
 fi

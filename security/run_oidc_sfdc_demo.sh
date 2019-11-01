@@ -4,19 +4,18 @@
 # https://gloo.solo.io/enterprise/authentication/oidc/
 
 # OIDC Configuration
-OIDC_ISSUER_URL='https://accounts.google.com/'
+OIDC_ISSUER_URL='https://login.salesforce.com/'
 OIDC_APP_URL='http://localhost:8080/'
-OIDC_CALLBACK_PATH='/callback'
+OIDC_CALLBACK_PATH='http://localhost:8080/callback'
 
-# https://console.developers.google.com/apis/credentials
-# OIDC_CLIENT_ID='<google id>'
-# OIDC_CLIENT_SECRET='<google secret>'
+# OIDC_CLIENT_ID='<consumer key>'
+# OIDC_CLIENT_SECRET='<consumer secret>'
 
 # Configure Credentials
-if [[ -f "${HOME}/scripts/secret/google_oidc_credentials.sh" ]]; then
-  # OIDC_CLIENT_ID='<google id>'
-  # OIDC_CLIENT_SECRET='<google secret>'
-  source "${HOME}/scripts/secret/google_oidc_credentials.sh"
+if [[ -f "${HOME}/scripts/secret/sfdc_oidc_credentials.sh" ]]; then
+  # OIDC_CLIENT_ID='<consumer key>'
+  # OIDC_CLIENT_SECRET='<consumer secret>'
+  source "${HOME}/scripts/secret/sfdc_oidc_credentials.sh"
 fi
 
 if [[ -z "${OIDC_CLIENT_ID}" ]] || [[ -z "${OIDC_CLIENT_SECRET}" ]]; then
