@@ -22,7 +22,7 @@ function wait_for_k8s_metrics_server() {
   sleep 2
 
   until curl --output /dev/null --silent --fail 'http://localhost:8001/apis/metrics.k8s.io/v1beta1/'; do
-    echo 'Waiting for availability of Kubernetes metrics API...'
+    echo 'Waiting for availability of Kubernetes metrics API needed for Helm...'
     sleep 5
   done
 

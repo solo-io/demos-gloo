@@ -22,8 +22,8 @@ POLICY_K8S_CONFIGMAP='allow-jwt'
 # Get directory this script is located in to access script local files
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
-source "${SCRIPT_DIR}/../common_scripts.sh"
-source "${SCRIPT_DIR}/../working_environment.sh"
+source "${SCRIPT_DIR}/../../common_scripts.sh"
+source "${SCRIPT_DIR}/../../working_environment.sh"
 
 # Will exit script if we would use an uninitialised variable (nounset) or when a
 # simple command (not a control structure) fails (errexit)
@@ -40,7 +40,7 @@ kubectl --namespace='gloo-system' delete \
   --ignore-not-found='true' \
   virtualservice/default \
   secret/"${K8S_SECRET_NAME}" \
-  configmap/"${POLICY_K8S_CONFIGMAP}" \
+  configmap/"${POLICY_K8S_CONFIGMAP}"
 
 # Install DEX OIDC Provider https://github.com/dexidp/dex
 # DEX is not required for Gloo extauth; it is here as an OIDC provider to simplify example
