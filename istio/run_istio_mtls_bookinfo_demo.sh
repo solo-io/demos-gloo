@@ -87,22 +87,32 @@ spec:
       mode: ISTIO_MUTUAL
 EOF
 
+set +e
+
+printf "\nlist certs\n"
 kubectl exec "${PRODUCTPAGE_POD_NAME}" -c istio-proxy -- ls /etc/certs
 
+printf "\nValidate certs\n"
 kubectl exec "${PRODUCTPAGE_POD_NAME}" -c istio-proxy -- cat /etc/certs/cert-chain.pem | openssl x509 -text -noout  | grep Validity -A 2
 
+printf "\nget alternative name\n"
 kubectl exec "${PRODUCTPAGE_POD_NAME}" -c istio-proxy -- cat /etc/certs/cert-chain.pem | openssl x509 -text -noout  | grep 'Subject Alternative Name' -A 1
 
+printf "\ntls-check\n"
 istioctl authn tls-check "${PRODUCTPAGE_POD_NAME}" reviews.default.svc.cluster.local
 
+printf "\ncurl from ratings pod\n"
 kubectl exec -it "${RATINGS_POD_NAME}" -c ratings -- curl productpage:9080/productpage | grep -o "<title>.*</title>"
 
+printf "\nfail - ratings to unsecured product page\n"
 # Fail - 56
 kubectl exec "${RATINGS_POD_NAME}" -c istio-proxy -- curl http://productpage:9080/productpage -o /dev/null -s -w '%{http_code}\n'
 
+printf "\nfail - ratings to product page with wrong cert\n"
 # Fail - 35
 kubectl exec "${RATINGS_POD_NAME}" -c istio-proxy -- curl https://productpage:9080/productpage -o /dev/null -s -w '%{http_code}\n' -k
 
+printf "\nsucceed - ratings to product with correct certs\n"
 # Succeed
 kubectl exec "${RATINGS_POD_NAME}" -c istio-proxy -- curl https://productpage:9080/productpage -o /dev/null -s -w '%{http_code}\n' --key /etc/certs/key.pem --cert /etc/certs/cert-chain.pem --cacert /etc/certs/root-cert.pem -k
 

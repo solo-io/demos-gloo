@@ -199,6 +199,8 @@ port_forward_deployment 'gloo-system' 'gateway-proxy-v2' '8080'
 
 sleep 10
 
+set +e
+
 # PROXY_URL="$(glooctl proxy url)"
 PROXY_URL='http://localhost:8080'
 
