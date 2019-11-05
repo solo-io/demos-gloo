@@ -8,8 +8,8 @@
 # Optional
 # brew install go openshift-cli; brew cask install minikube minishift
 
-GLOO_ENT_VERSION='0.20.6'
-GLOO_OSS_VERSION='0.20.12'
+GLOO_ENT_VERSION='0.20.8'
+GLOO_OSS_VERSION='0.20.13'
 
 # Get directory this script is located in to access script local files
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
