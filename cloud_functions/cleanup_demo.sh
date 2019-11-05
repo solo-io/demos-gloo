@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2034
 
-AZURE_SECRET_NAME='my-azure-secret'
-AZURE_UPSTREAM_NAME='my-azure-upstream'
+FUNCTION_SECRET_NAME='my-function-secret'
+FUNCTION_UPSTREAM_NAME='my-function-upstream'
 
 # Get directory this script is located in to access script local files
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
@@ -20,5 +20,5 @@ cleanup_port_forward_deployment 'gateway-proxy-v2'
 kubectl --namespace='gloo-system' delete \
   --ignore-not-found='true' \
   virtualservice/default \
-  secret/"${AZURE_SECRET_NAME}" \
-  upstream/"${AZURE_UPSTREAM_NAME}"
+  secret/"${FUNCTION_SECRET_NAME}" \
+  upstream/"${FUNCTION_UPSTREAM_NAME}"

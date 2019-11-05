@@ -3,9 +3,8 @@
 FUNCTION_SECRET_NAME='my-function-secret'
 FUNCTION_UPSTREAM_NAME='my-function-upstream'
 
-# AZURE_APP_NAME='azure app name'
-# AZURE_FUNCTION_NAME='azure function name'
-# AZURE_MASTER_HOST_KEY_VALUE='_master host key value'
+AWS_REGION='us-east-1'
+AWS_FUNCTION_NAME='hello-world'
 
 # Get directory this script is located in to access script local files
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
@@ -24,17 +23,14 @@ if [[ "${K8S_TOOL}" == 'kind' ]]; then
 fi
 
 # Configure Credentials
-if [[ -f "${HOME}/scripts/secret/azure_function_credentials.sh" ]]; then
-  # export AZURE_APP_NAME='azure app name'
-  # export AZURE_FUNCTION_NAME='azure function name'
-  # export AZURE_MASTER_HOST_KEY_VALUE='_master host key value'
-  source "${HOME}/scripts/secret/azure_function_credentials.sh"
+if [[ -f "${HOME}/scripts/secret/aws_function_credentials.sh" ]]; then
+  # export AWS_ACCESS_KEY=
+  # export AWS_SECRET_KEY=
+  source "${HOME}/scripts/secret/aws_function_credentials.sh"
 fi
 
-if [[ -z "${AZURE_APP_NAME}" ]] ||
-  [[ -z "${AZURE_FUNCTION_NAME}" ]] ||
-  [[ -z "${AZURE_MASTER_HOST_KEY_VALUE}" ]]; then
-  echo 'Must set Azure environment variables'
+if [[ -z "${AWS_ACCESS_KEY}" ]] || [[ -z "${AWS_SECRET_KEY}" ]]; then
+  echo 'Must set AWS environment variables'
   exit
 fi
 
@@ -45,12 +41,13 @@ kubectl --namespace='gloo-system' delete \
   secret/"${FUNCTION_SECRET_NAME}" \
   upstream/"${FUNCTION_UPSTREAM_NAME}"
 
-# Create secret for Azure Function Host Key '_master'
+# Create secret for AWS Function
 
-# glooctl create secret azure \
+# glooctl create secret aws \
 #   --name="${FUNCTION_SECRET_NAME}" \
 #   --namespace='gloo-system' \
-#   --api-keys="_master=${AZURE_MASTER_HOST_KEY_VALUE}"
+#   --access-key="${AWS_ACCESS_KEY}" \
+#   --secret-key="${AWS_SECRET_KEY}"
 
 kubectl apply --filename - <<EOF
 apiVersion: v1
@@ -62,22 +59,22 @@ metadata:
   name: ${FUNCTION_SECRET_NAME}
   namespace: gloo-system
 data:
-  azure: $(base64 --wrap=0 <<EOF2
-apiKeys:
-  _master: ${AZURE_MASTER_HOST_KEY_VALUE}
+  aws: $(base64 --wrap=0 - <<EOF2
+accessKey: ${AWS_ACCESS_KEY}
+secretKey: ${AWS_SECRET_KEY}
 EOF2
 )
 EOF
 
-# Create Gloo upstream for Azure function.
-# This example assumes an HTTP Trigger function that takes a single 'name' parameter
+# Create Gloo upstream for function.
+# This example assumes an API Gateway function
 
-# glooctl create upstream azure \
+# glooctl create upstream aws \
 #   --name="${FUNCTION_UPSTREAM_NAME}" \
 #   --namespace='gloo-system' \
-#   --azure-app-name="${AZURE_APP_NAME}" \
-#   --azure-secret-name="${FUNCTION_SECRET_NAME}" \
-#   --azure-secret-namespace='gloo-system'
+#   --aws-region="${AWS_REGION}" \
+#   --aws-secret-name="${FUNCTION_SECRET_NAME}" \
+#   --aws-secret-namespace='gloo-system'
 
 kubectl apply --filename - <<EOF
 apiVersion: gloo.solo.io/v1
@@ -87,11 +84,8 @@ metadata:
   namespace: gloo-system
 spec:
   upstreamSpec:
-    azure:
-      functionAppName: ${AZURE_APP_NAME}
-      functions:
-      - functionName: ${AZURE_FUNCTION_NAME}
-        authLevel: Function
+    aws:
+      region: ${AWS_REGION}
       secretRef:
         name: ${FUNCTION_SECRET_NAME}
         namespace: gloo-system
@@ -102,9 +96,9 @@ EOF
 # glooctl add route \
 #   --name='default' \
 #   --namespace='gloo-system' \
-#   --path-prefix='/helloazure' \
+#   --path-prefix='/helloaws' \
 #   --dest-name="${FUNCTION_UPSTREAM_NAME}" \
-#   --azure-function-name="${AZURE_FUNCTION_NAME}"
+#   --aws-function-name="${AWS_FUNCTION_NAME}"
 
 kubectl apply --filename - <<EOF
 apiVersion: gateway.solo.io/v1
@@ -118,12 +112,12 @@ spec:
     - '*'
     routes:
     - matcher:
-        prefix: /helloazure
+        prefix: /helloaws
       routeAction:
         single:
           destinationSpec:
-            azure:
-              functionName: ${AZURE_FUNCTION_NAME}
+            aws:
+              logicalName: ${AWS_FUNCTION_NAME}
           upstream:
             name: ${FUNCTION_UPSTREAM_NAME}
             namespace: gloo-system
@@ -137,4 +131,4 @@ sleep 2
 # PROXY_URL=$(glooctl proxy url)
 PROXY_URL='http://localhost:8080'
 
-curl --data '{"name":"Scott"}' --header "Content-Type: application/json" --request POST "${PROXY_URL}/helloazure"
+curl --silent "${PROXY_URL}/helloaws" | jq --raw-output '.body'
