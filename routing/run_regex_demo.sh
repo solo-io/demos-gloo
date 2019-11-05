@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Get directory this script is located in to access script local files
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
 source "${SCRIPT_DIR}/../common_scripts.sh"
 source "${SCRIPT_DIR}/../working_environment.sh"
