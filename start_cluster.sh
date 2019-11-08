@@ -62,7 +62,7 @@ case "${K8S_TOOL}" in
       --cpus=4 \
       --memory=8192mb \
       --wait=true \
-      --kubernetes-version='v1.15.4'
+      --kubernetes-version='v1.15.5'
 
     source <(minikube docker-env -p "${DEMO_CLUSTER_NAME}")
     ;;
