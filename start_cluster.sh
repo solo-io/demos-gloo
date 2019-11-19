@@ -8,8 +8,8 @@
 # Optional
 # brew install go openshift-cli; brew cask install minikube minishift
 
-GLOO_ENT_VERSION='0.20.8'
-GLOO_OSS_VERSION='0.20.13'
+GLOO_ENT_VERSION='0.21.0'
+GLOO_OSS_VERSION='0.21.3'
 
 # Get directory this script is located in to access script local files
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
@@ -35,12 +35,12 @@ case "${K8S_TOOL}" in
 
     # Delete existing cluster, i.e. restart cluster
     if [[ "$(kind get clusters)" == *"${DEMO_CLUSTER_NAME}"* ]]; then
-      kind delete cluster --name "${DEMO_CLUSTER_NAME}"
+      kind delete cluster --name="${DEMO_CLUSTER_NAME}"
     fi
 
     # Setup local Kubernetes cluster using kind (Kubernetes IN Docker) with
     # control plane and worker nodes
-    kind create cluster --name "${DEMO_CLUSTER_NAME}" --wait 60s
+    kind create cluster --name="${DEMO_CLUSTER_NAME}" --wait='60s'
 
     # Configure environment for kubectl to connect to kind cluster
     KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME}")
@@ -57,14 +57,14 @@ case "${K8S_TOOL}" in
     # minikube config set cpus 4
     # minikube config set memory 4096
 
-    minikube delete --profile "${DEMO_CLUSTER_NAME}" && true # Ignore errors
-    minikube start --profile "${DEMO_CLUSTER_NAME}" \
-      --cpus=4 \
-      --memory=8192mb \
-      --wait=true \
+    minikube delete --profile="${DEMO_CLUSTER_NAME}" && true # Ignore errors
+    minikube start --profile="${DEMO_CLUSTER_NAME}" \
+      --cpus='4' \
+      --memory='8192mb' \
+      --wait='true' \
       --kubernetes-version='v1.15.5'
 
-    source <(minikube docker-env -p "${DEMO_CLUSTER_NAME}")
+    source <(minikube docker-env --profile="${DEMO_CLUSTER_NAME}")
     ;;
 
   minishift)
@@ -103,10 +103,18 @@ case "${K8S_TOOL}" in
     DEMO_CLUSTER_NAME="${DEMO_CLUSTER_NAME:-gke-gloo}"
 
     gcloud container clusters delete "${DEMO_CLUSTER_NAME}" --quiet && true # Ignore errors
-    gcloud container clusters create "${DEMO_CLUSTER_NAME}" \
+    gcloud beta container clusters create "${DEMO_CLUSTER_NAME}" \
+      --release-channel='stable' \
       --machine-type='n1-standard-2' \
       --num-nodes='3' \
-      --labels='creator=gloo-demos'
+      --no-enable-basic-auth \
+      --enable-ip-alias \
+      --enable-stackdriver-kubernetes \
+      --addons='HorizontalPodAutoscaling,HttpLoadBalancing' \
+      --metadata='disable-legacy-endpoints=true' \
+      --labels="creator=$(whoami)"
+      # --preemptible \
+      # --max-pods-per-node='30' \
 
     gcloud container clusters get-credentials "${DEMO_CLUSTER_NAME}"
 
