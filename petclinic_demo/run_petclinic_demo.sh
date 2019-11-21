@@ -14,11 +14,6 @@ source "${SCRIPT_DIR}/../working_environment.sh"
 set -eu
 trap print_error ERR
 
-if [[ "${K8S_TOOL}" == 'kind' ]]; then
-  KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
-  export KUBECONFIG
-fi
-
 # Cleanup previous example runs
 kubectl --namespace='gloo-system' delete \
   --ignore-not-found='true' \

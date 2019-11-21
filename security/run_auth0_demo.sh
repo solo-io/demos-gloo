@@ -23,11 +23,6 @@ source "${SCRIPT_DIR}/../working_environment.sh"
 set -eu
 trap print_error ERR
 
-if [[ "${K8S_TOOL}" == 'kind' ]]; then
-  KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
-  export KUBECONFIG
-fi
-
 # Configure Auth0 Credentials
 if [[ -f "${HOME}/scripts/secret/auth0_credentials.sh" ]]; then
   # export AUTH0_DOMAIN='<Auth0 Domain>'

@@ -18,11 +18,6 @@ source "${SCRIPT_DIR}/../../working_environment.sh"
 set -eu
 trap print_error ERR
 
-if [[ "${K8S_TOOL}" == 'kind' ]]; then
-  KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
-  export KUBECONFIG
-fi
-
 # Configure OpenID Connect (OIDC) Provider information
 # * dex is a federated OIDC Provider that can run in cluster
 # * google is using Google Cloud as OIDC Provider

@@ -18,11 +18,6 @@ source "${SCRIPT_DIR}/../working_environment.sh"
 set -eu
 trap print_error ERR
 
-if [[ "${K8S_TOOL}" == 'kind' ]]; then
-  KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
-  export KUBECONFIG
-fi
-
 # Configure Credentials
 if [[ -f "${HOME}/scripts/secret/azure_function_credentials.sh" ]]; then
   # export AZURE_APP_NAME='azure app name'

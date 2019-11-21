@@ -11,11 +11,6 @@ source "${SCRIPT_DIR}/../working_environment.sh"
 set -eu
 trap print_error ERR
 
-if [[ "${K8S_TOOL}" == 'kind' ]]; then
-  KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME:-kind}")
-  export KUBECONFIG
-fi
-
 kubectl apply --filename - <<EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService

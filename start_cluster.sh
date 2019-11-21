@@ -11,6 +11,8 @@
 GLOO_ENT_VERSION='0.21.0'
 GLOO_OSS_VERSION='0.21.3'
 
+K8S_VERSION='v1.15.6'
+
 # Get directory this script is located in to access script local files
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
@@ -28,7 +30,7 @@ case "${K8S_TOOL}" in
   kind)
     if [[ -x "$(command -v go)" ]] && [[ "$(go version)" =~ go1.13 ]]; then
       # Install latest version of kind https://kind.sigs.k8s.io/
-      GO111MODULE='on' go get sigs.k8s.io/kind@v0.5.1
+      GO111MODULE='on' go get sigs.k8s.io/kind@v0.6.0
     fi
 
     DEMO_CLUSTER_NAME="${DEMO_CLUSTER_NAME:-kind}"
@@ -40,11 +42,7 @@ case "${K8S_TOOL}" in
 
     # Setup local Kubernetes cluster using kind (Kubernetes IN Docker) with
     # control plane and worker nodes
-    kind create cluster --name="${DEMO_CLUSTER_NAME}" --wait='60s'
-
-    # Configure environment for kubectl to connect to kind cluster
-    KUBECONFIG=$(kind get kubeconfig-path --name="${DEMO_CLUSTER_NAME}")
-    export KUBECONFIG
+    kind create cluster --name="${DEMO_CLUSTER_NAME}" --image=kindest/node:"${K8S_VERSION}" --wait='60s'
     ;;
 
   minikube)
@@ -62,7 +60,7 @@ case "${K8S_TOOL}" in
       --cpus='4' \
       --memory='8192mb' \
       --wait='true' \
-      --kubernetes-version='v1.15.5'
+      --kubernetes-version="${K8S_VERSION}"
 
     source <(minikube docker-env --profile="${DEMO_CLUSTER_NAME}")
     ;;
