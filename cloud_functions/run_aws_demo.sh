@@ -54,16 +54,11 @@ apiVersion: v1
 kind: Secret
 type: Opaque
 metadata:
-  annotations:
-    resource_kind: '*v1.Secret'
   name: ${FUNCTION_SECRET_NAME}
   namespace: gloo-system
 data:
-  aws: $(base64 --wrap=0 - <<EOF2
-accessKey: ${AWS_ACCESS_KEY}
-secretKey: ${AWS_SECRET_KEY}
-EOF2
-)
+  aws_access_key_id: $(base64 --wrap=0 <(echo -n "${AWS_ACCESS_KEY}"))
+  aws_secret_access_key: $(base64 --wrap=0 <(echo -n "${AWS_SECRET_KEY}"))
 EOF
 
 # Create Gloo upstream for function.
