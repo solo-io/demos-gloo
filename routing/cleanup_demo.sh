@@ -12,3 +12,7 @@ cleanup_port_forward_deployment 'gateway-proxy-v2'
 kubectl --namespace='gloo-system' delete \
   --ignore-not-found='true' \
   virtualservice/default
+
+  kubectl --namespace='default' delete \
+  --ignore-not-found='true' \
+  --filename="${GLOO_DEMO_RESOURCES_HOME}/petstore.yaml"

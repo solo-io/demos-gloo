@@ -33,16 +33,45 @@ kubectl --namespace='default' apply \
 kubectl --namespace='default' apply \
   --filename "${GLOO_DEMO_RESOURCES_HOME}/petstore.yaml"
 
-# Configure AWS upstreams
-if [[ -f "${HOME}/scripts/secret/aws_credentials.sh" ]]; then
+kubectl --namespace='default' label service/petstore \
+  --overwrite='true' \
+  'discovery.solo.io/function_discovery=enabled'
+
+# Configure AWS upstream
+if [[ -f "${HOME}/scripts/secret/aws_function_credentials.sh" ]]; then
   # Cleanup old resources
   kubectl --namespace='gloo-system' delete \
     --ignore-not-found='true' \
     secret/aws \
     upstream/aws
 
-  # glooctl create secret aws --name 'aws' --namespace 'gloo-system' --access-key '<access key>' --secret-key '<secret key>'
-  source "${HOME}/scripts/secret/aws_credentials.sh"
+  # AWS_ACCESS_KEY='<access key>'
+  # AWS_SECRET_KEY='<secret key>'
+  source "${HOME}/scripts/secret/aws_function_credentials.sh"
+
+  # glooctl create secret aws --name='aws' \
+  #   --namespace='gloo-system' \
+  #   --access-key="${AWS_ACCESS_KEY}" \
+  #   --secret-key="${AWS_SECRET_KEY}"
+
+  kubectl apply --filename - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws
+  namespace: gloo-system
+type: Opaque
+data:
+  aws_access_key_id: $(echo -n "${AWS_ACCESS_KEY}" | base64 --wrap='0' -)
+  aws_secret_access_key: $(echo -n "${AWS_SECRET_KEY}" | base64 --wrap='0' -)
+EOF
+
+  # glooctl create upstream aws \
+  #   --name='aws' \
+  #   --namespace='gloo-system' \
+  #   --aws-region='us-east-1' \
+  #   --aws-secret-name='aws' \
+  #   --aws-secret-namespace='gloo-system'
 
   kubectl apply --filename - <<EOF
 apiVersion: gloo.solo.io/v1
@@ -58,7 +87,7 @@ spec:
         name: aws
         namespace: gloo-system
 EOF
-fi
+fi # Configure AWS upstream
 
 #
 # Configure Traffic Routing rules
@@ -70,6 +99,7 @@ fi
 
 # glooctl add route \
 #   --name='default' \
+#   --namespace='gloo-system' \
 #   --path-prefix='/' \
 #   --dest-name='default-petclinic-8080' \
 #   --dest-namespace='gloo-system'
@@ -85,14 +115,24 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
             name: default-petclinic-8080
             namespace: gloo-system
 EOF
+
+# Enable Function Discovery for all Upstreams
+kubectl --namespace='gloo-system' patch settings/default \
+  --type='merge' \
+  --patch "$(cat<<EOF
+spec:
+  discovery:
+    fdsMode: BLACKLIST
+EOF
+)"
 
 #
 # Enable localhost access to cluster and open web brower clients

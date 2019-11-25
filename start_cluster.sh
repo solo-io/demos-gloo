@@ -3,10 +3,10 @@
 # Starts up a Kubernetes clusterbased on settings in working_environment.sh
 
 # Expects
-# brew install kubernetes-cli kubernetes-helm skaffold
+# brew install kubernetes-cli helm@2
 
 # Optional
-# brew install go openshift-cli; brew cask install minikube minishift
+# brew install kind minikube skaffoldopenshift-cli; brew cask install minishift
 
 GLOO_ENT_VERSION='0.21.0'
 GLOO_OSS_VERSION='0.21.3'
@@ -28,11 +28,6 @@ K8S_TOOL="${K8S_TOOL:-kind}" # kind, minikube, minishift, gcloud, custom
 
 case "${K8S_TOOL}" in
   kind)
-    if [[ -x "$(command -v go)" ]] && [[ "$(go version)" =~ go1.13 ]]; then
-      # Install latest version of kind https://kind.sigs.k8s.io/
-      GO111MODULE='on' go get sigs.k8s.io/kind@v0.6.0
-    fi
-
     DEMO_CLUSTER_NAME="${DEMO_CLUSTER_NAME:-kind}"
 
     # Delete existing cluster, i.e. restart cluster
@@ -42,14 +37,16 @@ case "${K8S_TOOL}" in
 
     # Setup local Kubernetes cluster using kind (Kubernetes IN Docker) with
     # control plane and worker nodes
-    kind create cluster --name="${DEMO_CLUSTER_NAME}" --image=kindest/node:"${K8S_VERSION}" --wait='60s'
+    kind create cluster --name="${DEMO_CLUSTER_NAME}" \
+      --image=kindest/node:"${K8S_VERSION}" \
+      --wait='60s'
     ;;
 
   minikube)
     DEMO_CLUSTER_NAME="${DEMO_CLUSTER_NAME:-minikube}"
 
     # for Mac (can also use Virtual Box)
-    # brew install hyperkit; brew cask install minikube
+    # brew install minikube
     # minikube config set vm-driver hyperkit
 
     # minikube config set cpus 4
