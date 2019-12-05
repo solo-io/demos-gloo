@@ -150,3 +150,13 @@ port_forward_deployment 'gloo-system' 'gateway-proxy-v2' "${PROXY_PORT:-9080}:80
 kubectl --namespace='default' rollout status deployment/petclinic --watch='true'
 
 open "http://localhost:${PROXY_PORT:-9080}/"
+
+# Create localhost port-forward of Gloo installed Promethesu
+port_forward_deployment 'gloo-system' 'glooe-prometheus-server' '9090'
+
+open 'http://localhost:9090'
+
+# Create localhost port-forward of Gloo installed Grafana
+port_forward_deployment 'gloo-system' 'glooe-grafana' '3000'
+
+open 'http://localhost:3000'
