@@ -8,8 +8,8 @@
 # Optional
 # brew install kind minikube skaffoldopenshift-cli; brew cask install minishift
 
-GLOO_ENT_VERSION='0.21.0'
-GLOO_OSS_VERSION='0.21.3'
+GLOO_ENT_VERSION='1.0.0-rc2'
+GLOO_OSS_VERSION='1.1.0'
 
 K8S_VERSION='v1.15.6'
 
