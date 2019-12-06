@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-PROXY_PORT=9080
-WEB_UI_PORT=9088
+PROXY_PORT='9080'
+WEB_UI_PORT='9088'
 
 # Get directory this script is located in to access script local files
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
