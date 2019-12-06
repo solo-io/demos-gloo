@@ -250,7 +250,7 @@ spec:
           upstream:
             name: default-petclinic-8080
             namespace: "${GLOO_NAMESPACE}"
-    options:
+    virtualHostOptions:
       extauth:
         configRef:
           name: petclinic-auth

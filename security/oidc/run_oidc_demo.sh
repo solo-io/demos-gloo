@@ -186,7 +186,7 @@ spec:
           upstream:
             name: default-petclinic-8080
             namespace: gloo-system
-    options:
+    virtualHostOptions:
       extauth:
         config_ref:
           name: my-oidc

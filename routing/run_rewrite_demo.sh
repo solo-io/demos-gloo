@@ -47,7 +47,7 @@ spec:
           upstream:
             name: default-petstore-8080
             namespace: gloo-system
-      options:
+      routeOptions:
         prefixRewrite: /api/pets
 EOF
 

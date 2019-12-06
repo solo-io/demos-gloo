@@ -84,7 +84,7 @@ spec:
           upstream:
             name: default-petstore-8080
             namespace: gloo-system
-    options:
+    virtualHostOptions:
       extensions:
         configs:
           jwt:

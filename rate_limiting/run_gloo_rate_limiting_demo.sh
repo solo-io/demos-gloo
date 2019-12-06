@@ -129,7 +129,7 @@ spec:
           upstream:
             name: default-petclinic-8080
             namespace: gloo-system
-      options:
+      routeOptions:
         extensions:
           configs:
             extauth:
@@ -141,7 +141,7 @@ spec:
           upstream:
             name: default-petclinic-8080
             namespace: gloo-system
-    options:
+    virtualHostOptions:
       extensions:
         configs:
           extauth:
