@@ -15,7 +15,7 @@ set -eu
 trap print_error ERR
 
 # Cleanup previous example runs
-kubectl --namespace='gloo-system' delete \
+kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
   virtualservice/default
 
@@ -40,7 +40,7 @@ kubectl --namespace='default' label service/petstore \
 # Configure AWS upstream
 if [[ -f "${HOME}/scripts/secret/aws_function_credentials.sh" ]]; then
   # Cleanup old resources
-  kubectl --namespace='gloo-system' delete \
+  kubectl --namespace="${GLOO_NAMESPACE}" delete \
     --ignore-not-found='true' \
     secret/aws \
     upstream/aws
@@ -50,7 +50,7 @@ if [[ -f "${HOME}/scripts/secret/aws_function_credentials.sh" ]]; then
   source "${HOME}/scripts/secret/aws_function_credentials.sh"
 
   # glooctl create secret aws --name='aws' \
-  #   --namespace='gloo-system' \
+  #   --namespace="${GLOO_NAMESPACE}" \
   #   --access-key="${AWS_ACCESS_KEY}" \
   #   --secret-key="${AWS_SECRET_KEY}"
 
@@ -59,7 +59,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: aws
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 type: Opaque
 data:
   aws_access_key_id: $(echo -n "${AWS_ACCESS_KEY}" | base64 --wrap='0' -)
@@ -68,24 +68,24 @@ EOF
 
   # glooctl create upstream aws \
   #   --name='aws' \
-  #   --namespace='gloo-system' \
+  #   --namespace="${GLOO_NAMESPACE}" \
   #   --aws-region='us-east-1' \
   #   --aws-secret-name='aws' \
-  #   --aws-secret-namespace='gloo-system'
+  #   --aws-secret-namespace="${GLOO_NAMESPACE}"
 
   kubectl apply --filename - <<EOF
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
   name: aws
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 spec:
   upstreamSpec:
     aws:
       region: us-east-1
       secretRef:
         name: aws
-        namespace: gloo-system
+        namespace: "${GLOO_NAMESPACE}"
 EOF
 fi # Configure AWS upstream
 
@@ -95,21 +95,21 @@ fi # Configure AWS upstream
 
 # glooctl create virtualservice \
 #   --name='default' \
-#   --namespace='gloo-system'
+#   --namespace="${GLOO_NAMESPACE}"
 
 # glooctl add route \
 #   --name='default' \
-#   --namespace='gloo-system' \
+#   --namespace="${GLOO_NAMESPACE}" \
 #   --path-prefix='/' \
 #   --dest-name='default-petclinic-8080' \
-#   --dest-namespace='gloo-system'
+#   --dest-namespace="${GLOO_NAMESPACE}"
 
 kubectl apply --filename - <<EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   name: default
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 spec:
   virtualHost:
     domains:
@@ -121,11 +121,11 @@ spec:
         single:
           upstream:
             name: default-petclinic-8080
-            namespace: gloo-system
+            namespace: "${GLOO_NAMESPACE}"
 EOF
 
 # Enable Function Discovery for all Upstreams
-kubectl --namespace='gloo-system' patch settings/default \
+kubectl --namespace="${GLOO_NAMESPACE}" patch settings/default \
   --type='merge' \
   --patch "$(cat<<EOF
 spec:
@@ -139,12 +139,12 @@ EOF
 #
 
 # Expose and open in browser GlooE Web UI Console
-port_forward_deployment 'gloo-system' 'api-server' "${WEB_UI_PORT:-9088}:8080"
+port_forward_deployment "${GLOO_NAMESPACE}" 'api-server' "${WEB_UI_PORT:-9088}:8080"
 
 open "http://localhost:${WEB_UI_PORT:-9088}/"
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-port_forward_deployment 'gloo-system' 'gateway-proxy-v2' "${PROXY_PORT:-9080}:8080"
+port_forward_deployment "${GLOO_NAMESPACE}" 'gateway-proxy' "${PROXY_PORT:-9080}:8080"
 
 # Wait for app to be fully deployed and running
 kubectl --namespace='default' rollout status deployment/petclinic --watch='true'
@@ -152,11 +152,11 @@ kubectl --namespace='default' rollout status deployment/petclinic --watch='true'
 open "http://localhost:${PROXY_PORT:-9080}/"
 
 # Create localhost port-forward of Gloo installed Promethesu
-port_forward_deployment 'gloo-system' 'glooe-prometheus-server' '9090'
+port_forward_deployment "${GLOO_NAMESPACE}" 'glooe-prometheus-server' '9090'
 
 open 'http://localhost:9090'
 
 # Create localhost port-forward of Gloo installed Grafana
-port_forward_deployment 'gloo-system' 'glooe-grafana' '3000'
+port_forward_deployment "${GLOO_NAMESPACE}" 'glooe-grafana' '3000'
 
 open 'http://localhost:3000'

@@ -9,9 +9,11 @@
 # brew install kind minikube skaffoldopenshift-cli; brew cask install minishift
 
 GLOO_ENT_VERSION='1.0.0-rc2'
-GLOO_OSS_VERSION='1.1.0'
+GLOO_OSS_VERSION='1.2.0'
 
-K8S_VERSION='v1.15.6'
+GLOO_NAMESPACE="${GLOO_NAMESPACE:-gloo-system}"
+
+K8S_VERSION='latest'
 
 # Get directory this script is located in to access script local files
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
@@ -37,9 +39,14 @@ case "${K8S_TOOL}" in
 
     # Setup local Kubernetes cluster using kind (Kubernetes IN Docker) with
     # control plane and worker nodes
-    kind create cluster --name="${DEMO_CLUSTER_NAME}" \
-      --image=kindest/node:"${K8S_VERSION}" \
-      --wait='60s'
+    if [[ "${K8S_VERSION}" == 'latest' ]]; then
+      kind create cluster --name="${DEMO_CLUSTER_NAME}" \
+        --wait='60s'
+    else
+      kind create cluster --name="${DEMO_CLUSTER_NAME}" \
+        --image=kindest/node:"${K8S_VERSION}" \
+        --wait='60s'
+    fi
     ;;
 
   minikube)
@@ -53,11 +60,19 @@ case "${K8S_TOOL}" in
     # minikube config set memory 4096
 
     minikube delete --profile="${DEMO_CLUSTER_NAME}" && true # Ignore errors
-    minikube start --profile="${DEMO_CLUSTER_NAME}" \
-      --cpus='4' \
-      --memory='8192mb' \
-      --wait='true' \
-      --kubernetes-version="${K8S_VERSION}"
+
+    if [[ "${K8S_VERSION}" == 'latest' ]]; then
+      minikube start --profile="${DEMO_CLUSTER_NAME}" \
+        --cpus='4' \
+        --memory='8192mb' \
+        --wait='true'
+    else
+      minikube start --profile="${DEMO_CLUSTER_NAME}" \
+        --cpus='4' \
+        --memory='8192mb' \
+        --wait='true' \
+        --kubernetes-version="${K8S_VERSION}"
+    fi
 
     source <(minikube docker-env --profile="${DEMO_CLUSTER_NAME}")
     ;;
@@ -82,13 +97,13 @@ case "${K8S_TOOL}" in
     oc login --username='system:admin'
 
     # Add security context constraint to users or a service account
-    oc --namespace gloo-system adm policy add-scc-to-user anyuid \
+    oc --namespace "${GLOO_NAMESPACE}" adm policy add-scc-to-user anyuid \
       --serviceaccount='glooe-prometheus-server'
-    oc --namespace gloo-system adm policy add-scc-to-user anyuid \
+    oc --namespace "${GLOO_NAMESPACE}" adm policy add-scc-to-user anyuid \
       --serviceaccount='glooe-prometheus-kube-state-metrics'
-    oc --namespace gloo-system adm policy add-scc-to-user anyuid \
+    oc --namespace "${GLOO_NAMESPACE}" adm policy add-scc-to-user anyuid \
       --serviceaccount='glooe-grafana'
-    oc --namespace gloo-system adm policy add-scc-to-user anyuid \
+    oc --namespace "${GLOO_NAMESPACE}" adm policy add-scc-to-user anyuid \
       --serviceaccount='default'
 
     source <(minishift docker-env --profile "${DEMO_CLUSTER_NAME}")
@@ -187,8 +202,9 @@ case "${GLOO_MODE}" in
 
     helm repo add glooe 'http://storage.googleapis.com/gloo-ee-helm'
     helm repo update
+    kubectl create namespace "${GLOO_NAMESPACE}"
     helm upgrade --install glooe glooe/gloo-ee \
-      --namespace='gloo-system' \
+      --namespace="${GLOO_NAMESPACE}" \
       --version="${GLOO_VERSION}" \
       --set="license_key=${GLOOE_LICENSE_KEY}" \
       --set="gloo.gatewayProxies.gatewayProxyV2.readConfig=true"
@@ -199,8 +215,9 @@ case "${GLOO_MODE}" in
 
     helm repo add gloo 'https://storage.googleapis.com/solo-public-helm'
     helm repo update
+    kubectl create namespace "${GLOO_NAMESPACE}"
     helm upgrade --install gloo gloo/gloo \
-      --namespace='gloo-system' \
+      --namespace="${GLOO_NAMESPACE}" \
       --version="${GLOO_VERSION}" \
       --set="gloo.gatewayProxies.gatewayProxyV2.readConfig=true"
     ;;
@@ -212,8 +229,9 @@ case "${GLOO_MODE}" in
     helm repo update
     helm fetch --untar='true' --untardir='.' --version="${GLOO_VERSION}" \
       gloo/gloo
+    kubectl create namespace "${GLOO_NAMESPACE}"
     helm upgrade --install gloo gloo/gloo \
-      --namespace='gloo-system' \
+      --namespace="${GLOO_NAMESPACE}" \
       --version="${GLOO_VERSION}" \
       --values='gloo/values-knative.yaml'
     ;;

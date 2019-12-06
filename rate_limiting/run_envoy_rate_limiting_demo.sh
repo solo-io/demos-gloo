@@ -92,14 +92,14 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
             name: default-petstore-8080
             namespace: gloo-system
-    virtualHostPlugins:
+    options:
       extensions:
         configs:
           envoy-rate-limit:
@@ -114,7 +114,7 @@ spec:
 EOF
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-port_forward_deployment 'gloo-system' 'gateway-proxy-v2' '8080'
+port_forward_deployment 'gloo-system' 'gateway-proxy' '8080'
 
 # Wait for demo application to be fully deployed and running
 kubectl --namespace='default' rollout status deployment/petstore --watch='true'

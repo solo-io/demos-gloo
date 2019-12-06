@@ -47,12 +47,12 @@ spec:
           upstream:
             name: default-petstore-8080
             namespace: gloo-system
-      routePlugins:
+      options:
         prefixRewrite: /api/pets
 EOF
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-port_forward_deployment 'gloo-system' 'gateway-proxy-v2' '8080'
+port_forward_deployment 'gloo-system' 'gateway-proxy' '8080'
 
 sleep 2
 

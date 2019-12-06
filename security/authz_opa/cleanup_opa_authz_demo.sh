@@ -8,7 +8,7 @@ source "${SCRIPT_DIR}/../../working_environment.sh"
 
 POLICY_K8S_CONFIGMAP='allow-get-users'
 
-cleanup_port_forward_deployment 'gateway-proxy-v2'
+cleanup_port_forward_deployment 'gateway-proxy'
 
 kubectl --namespace='gloo-system' delete \
   --ignore-not-found='true' \

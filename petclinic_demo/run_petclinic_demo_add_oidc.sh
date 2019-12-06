@@ -28,13 +28,13 @@ OIDC_CLIENT_SECRET="${AUTH0_CLIENT_SECRET}"
 K8S_SECRET_NAME='my-oauth-secret'
 
 # Cleanup old examples
-kubectl --namespace='gloo-system' delete \
+kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
   secret/"${K8S_SECRET_NAME}"
 
 # glooctl create secret oauth \
 #   --name="${K8S_SECRET_NAME}" \
-#   --namespace='gloo-system' \
+#   --namespace="${GLOO_NAMESPACE}" \
 #   --client-secret="${AUTH0_CLIENT_SECRET}"
 
 kubectl apply --filename - <<EOF
@@ -45,7 +45,7 @@ metadata:
   annotations:
     resource_kind: '*v1.Secret'
   name: ${K8S_SECRET_NAME}
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 data:
   extension: $(base64 --wrap=0 <<EOF2
 config:
@@ -59,7 +59,7 @@ apiVersion: enterprise.gloo.solo.io/v1
 kind: AuthConfig
 metadata:
   name: my-oidc
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 spec:
   configs:
   - oauth:
@@ -68,20 +68,20 @@ spec:
       client_id: ${OIDC_CLIENT_ID}
       client_secret_ref:
         name: ${K8S_SECRET_NAME}
-        namespace: gloo-system
+        namespace: "${GLOO_NAMESPACE}"
       issuer_url: ${OIDC_ISSUER_URL}
       scopes: []
 EOF
 
-kubectl --namespace='gloo-system' patch virtualservice/default \
+kubectl --namespace="${GLOO_NAMESPACE}" patch virtualservice/default \
   --type='merge' \
   --patch "$(cat<<EOF
 spec:
   virtualHost:
-    virtualHostPlugins:
+    options:
       extauth:
         config_ref:
           name: my-oidc
-          namespace: gloo-system
+          namespace: "${GLOO_NAMESPACE}"
 EOF
 )"

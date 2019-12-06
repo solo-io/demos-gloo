@@ -63,8 +63,8 @@ function cleanup_port_forward_deployment() {
 function set_gloo_proxy_log_level() {
   DEBUG_LEVEL="${1:-debug}"
 
-  kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy-v2 --watch='true'
-  kubectl --namespace='gloo-system' port-forward deployment/gateway-proxy-v2 19000 >/dev/null 2>&1 &
+  kubectl --namespace="${GLOO_NAMESPACE:-gloo-system}" rollout status deployment/gateway-proxy --watch='true'
+  kubectl --namespace="${GLOO_NAMESPACE:-gloo-system}" port-forward deployment/gateway-proxy 19000 >/dev/null 2>&1 &
   PID=$!
 
   curl --silent --request POST "http://localhost:19000/logging?level=${DEBUG_LEVEL}" >/dev/null

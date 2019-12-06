@@ -101,8 +101,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /helloaws
+    - matchers:
+      - prefix: /helloaws
       routeAction:
         single:
           destinationSpec:
@@ -114,11 +114,11 @@ spec:
 EOF
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-port_forward_deployment 'gloo-system' 'gateway-proxy-v2' '8080'
+port_forward_deployment 'gloo-system' 'gateway-proxy' '8080'
 
 sleep 2
 
 # PROXY_URL=$(glooctl proxy url)
 PROXY_URL='http://localhost:8080'
 
-curl --silent "${PROXY_URL}/helloaws" | jq --raw-output '.body'
+curl --verbose --silent "${PROXY_URL}/helloaws" | jq --raw-output '.body'

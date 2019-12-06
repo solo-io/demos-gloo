@@ -112,8 +112,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /helloazure
+    - matchers:
+      - prefix: /helloazure
       routeAction:
         single:
           destinationSpec:
@@ -125,7 +125,7 @@ spec:
 EOF
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-port_forward_deployment 'gloo-system' 'gateway-proxy-v2' '8080'
+port_forward_deployment 'gloo-system' 'gateway-proxy' '8080'
 
 sleep 2
 

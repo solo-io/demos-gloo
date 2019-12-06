@@ -179,14 +179,14 @@ spec:
     - '*'
     name: gloo-system.default
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
             name: default-petclinic-8080
             namespace: gloo-system
-    virtualHostPlugins:
+    options:
       extauth:
         config_ref:
           name: my-oidc
@@ -196,7 +196,7 @@ EOF
 # kubectl --namespace gloo-system get virtualservice/default --output yaml
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-port_forward_deployment 'gloo-system' 'gateway-proxy-v2' '8080'
+port_forward_deployment 'gloo-system' 'gateway-proxy' '8080'
 
 # Wait for demo application to be fully deployed and running
 kubectl --namespace='default' rollout status deployment/petclinic --watch='true'

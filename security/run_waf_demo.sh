@@ -47,14 +47,14 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
             name: default-petstore-8080
             namespace: gloo-system
-    virtualHostPlugins:
+    options:
       extensions:
         configs:
           waf:
@@ -74,7 +74,7 @@ sleep 10
 kubectl --namespace='default' rollout status deployment/petstore --watch='true'
 
 # Wait for Gloo proxy to be fully running
-kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy-v2 \
+kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy \
   --watch='true'
 
 # Turn on Gloo proxy debug logging
@@ -86,11 +86,11 @@ if [[ -f "${LOGGER_PID_FILE}" ]]; then
   xargs kill <"${LOGGER_PID_FILE}" && true # ignore errors
   rm "${LOGGER_PID_FILE}" "${SCRIPT_DIR}/proxy.log"
 fi
-kubectl --namespace='gloo-system' logs --follow='true' deployment/gateway-proxy-v2 >"${SCRIPT_DIR}/proxy.log" &
+kubectl --namespace='gloo-system' logs --follow='true' deployment/gateway-proxy >"${SCRIPT_DIR}/proxy.log" &
 echo $! >"${LOGGER_PID_FILE}"
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-port_forward_deployment 'gloo-system' 'gateway-proxy-v2' '8080'
+port_forward_deployment 'gloo-system' 'gateway-proxy' '8080'
 
 # PROXY_URL=$(glooctl proxy url)
 PROXY_URL='http://localhost:8080'

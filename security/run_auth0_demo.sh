@@ -77,14 +77,14 @@ spec:
     - '*'
     name: gloo-system.default
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
             name: default-petstore-8080
             namespace: gloo-system
-    virtualHostPlugins:
+    options:
       extensions:
         configs:
           jwt:
@@ -103,7 +103,7 @@ spec:
 EOF
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-port_forward_deployment 'gloo-system' 'gateway-proxy-v2' '8080'
+port_forward_deployment 'gloo-system' 'gateway-proxy' '8080'
 
 # GLOO_PROXY_URL=$(glooctl proxy url)
 GLOO_PROXY_URL='http://localhost:8080'

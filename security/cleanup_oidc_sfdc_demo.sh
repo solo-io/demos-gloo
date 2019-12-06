@@ -8,7 +8,7 @@ source "${SCRIPT_DIR}/../working_environment.sh"
 
 K8S_SECRET_NAME='my-oauth-secret'
 
-cleanup_port_forward_deployment 'gateway-proxy-v2'
+cleanup_port_forward_deployment 'gateway-proxy'
 
 kubectl --namespace='gloo-system' delete \
   --ignore-not-found='true' \

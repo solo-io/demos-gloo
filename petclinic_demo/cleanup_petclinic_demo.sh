@@ -8,10 +8,10 @@ source "${SCRIPT_DIR}/../working_environment.sh"
 
 cleanup_port_forward_deployment 'glooe-grafana'
 cleanup_port_forward_deployment 'glooe-prometheus-server'
-cleanup_port_forward_deployment 'gateway-proxy-v2'
+cleanup_port_forward_deployment 'gateway-proxy'
 cleanup_port_forward_deployment 'api-server'
 
-kubectl --namespace='gloo-system' delete \
+kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
   upstream/aws \
   secret/aws \
