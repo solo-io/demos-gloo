@@ -8,7 +8,7 @@
 # Optional
 # brew install go openshift-cli; brew cask install minikube minishift
 
-GLOO_ENT_VERSION='0.21.0'
+GLOO_ENT_VERSION='0.21.1'
 GLOO_OSS_VERSION='0.21.3'
 
 K8S_VERSION='v1.15.6'
