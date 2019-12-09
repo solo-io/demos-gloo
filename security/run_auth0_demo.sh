@@ -75,7 +75,6 @@ spec:
   virtualHost:
     domains:
     - '*'
-    name: gloo-system.default
     routes:
     - matchers:
       - prefix: /
@@ -84,7 +83,7 @@ spec:
           upstream:
             name: default-petstore-8080
             namespace: gloo-system
-    virtualHostOptions:
+    options:
       extensions:
         configs:
           jwt:

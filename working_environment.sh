@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2034
 
-K8S_TOOL='minikube'   # kind, minikube, minishift, gcloud, custom
-TILLER_MODE='cluster' # local, cluster, none
-GLOO_MODE='ent'       # oss, ent, knative, none
+K8S_TOOL='minikube' # kind, minikube, minishift, gcloud, custom
+TILLER_MODE='none'  # local, cluster, none
+GLOO_MODE='oss'     # oss, ent, knative, none
 
-GLOO_VERSION='1.0.0-rc2' # ent
+GLOO_NAMESPACE='gloo-system'
+
+# GLOO_VERSION='1.0.0-rc3' # ent
+GLOO_VERSION='1.2.1' # ent
 
 GLOO_DEMO_HOME="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 

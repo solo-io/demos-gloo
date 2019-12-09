@@ -99,10 +99,10 @@ spec:
           upstream:
             name: default-petstore-8080
             namespace: gloo-system
-    virtualHostOptions:
+    options:
       extensions:
         configs:
-          envoy-rate-limit:
+          rateLimitVhostExtension:
             rateLimits:
             - actions:
               - requestHeaders:

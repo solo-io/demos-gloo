@@ -177,7 +177,6 @@ spec:
   virtualHost:
     domains:
     - '*'
-    name: gloo-system.default
     routes:
     - matchers:
       - prefix: /
@@ -186,9 +185,9 @@ spec:
           upstream:
             name: default-petclinic-8080
             namespace: gloo-system
-    virtualHostOptions:
+    options:
       extauth:
-        config_ref:
+        configRef:
           name: my-oidc
           namespace: gloo-system
 EOF

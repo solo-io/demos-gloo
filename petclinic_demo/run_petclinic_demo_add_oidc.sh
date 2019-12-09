@@ -78,7 +78,7 @@ kubectl --namespace="${GLOO_NAMESPACE}" patch virtualservice/default \
   --patch "$(cat<<EOF
 spec:
   virtualHost:
-    virtualHostOptions:
+    options:
       extauth:
         config_ref:
           name: my-oidc

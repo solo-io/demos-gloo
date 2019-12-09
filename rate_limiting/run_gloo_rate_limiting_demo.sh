@@ -111,6 +111,26 @@ EOF
 #   --dest-namespace='gloo-system'
 
 kubectl apply --filename - <<EOF
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: my-oidc
+  namespace: gloo-system
+spec:
+  configs:
+  - oauth:
+      app_url: ${OIDC_APP_URL}
+      callback_path: ${OIDC_CALLBACK_PATH}
+      client_id: ${OIDC_CLIENT_ID}
+      client_secret_ref:
+        name: ${K8S_SECRET_NAME}
+        namespace: gloo-system
+      issuer_url: ${OIDC_ISSUER_URL}
+      scopes:
+      - email
+EOF
+
+kubectl apply --filename - <<EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -129,7 +149,7 @@ spec:
           upstream:
             name: default-petclinic-8080
             namespace: gloo-system
-      routeOptions:
+      options:
         extensions:
           configs:
             extauth:
@@ -141,21 +161,13 @@ spec:
           upstream:
             name: default-petclinic-8080
             namespace: gloo-system
-    virtualHostOptions:
+    options:
+      extauth:
+        configRef:
+          name: my-oidc
+          namespace: gloo-system
       extensions:
         configs:
-          extauth:
-            configs:
-            - oauth:
-                app_url: ${OIDC_APP_URL}
-                callback_path: ${OIDC_CALLBACK_PATH}
-                client_id: ${OIDC_CLIENT_ID}
-                client_secret_ref:
-                  name: ${K8S_SECRET_NAME}
-                  namespace: gloo-system
-                issuer_url: ${OIDC_ISSUER_URL}
-                scopes:
-                - email
           rate-limit:
             anonymous_limits:
               requests_per_unit: 5

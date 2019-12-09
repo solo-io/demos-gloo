@@ -207,7 +207,7 @@ case "${GLOO_MODE}" in
       --namespace="${GLOO_NAMESPACE}" \
       --version="${GLOO_VERSION}" \
       --set="license_key=${GLOOE_LICENSE_KEY}" \
-      --set="gloo.gatewayProxies.gatewayProxyV2.readConfig=true"
+      --set="gloo.gatewayProxies.gatewayProxy.readConfig=true"
     ;;
 
   oss)
@@ -219,7 +219,10 @@ case "${GLOO_MODE}" in
     helm upgrade --install gloo gloo/gloo \
       --namespace="${GLOO_NAMESPACE}" \
       --version="${GLOO_VERSION}" \
-      --set="gloo.gatewayProxies.gatewayProxyV2.readConfig=true"
+      --set="gatewayProxies.gatewayProxy.readConfig=true"
+
+      # needed for minishift 3.11 and Gloo 1.2.0
+      # --set="gateway.certGenJob.setTtlAfterFinished=false"
     ;;
 
   knative)
