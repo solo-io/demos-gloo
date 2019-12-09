@@ -24,7 +24,7 @@ kubectl --namespace='gloo-system' patch settings/default \
   --patch='[
     {
       "op": "remove",
-      "path": "/spec/extensions/configs/envoy-rate-limit"
+      "path": "/spec/ratelimit"
     }
   ]' && true #ignore errors
 
@@ -52,23 +52,20 @@ kubectl --namespace='gloo-system' patch settings/default \
   --type='merge' \
   --patch "$(cat<<EOF
 spec:
-  extensions:
-    configs:
-      envoy-rate-limit:
-        customConfig:
-          descriptors:
-          - key: account_id
-            descriptors:
-            - key: plan
-              value: BASIC
-              rateLimit:
-                requestsPerUnit: 1
-                unit: MINUTE
-            - key: plan
-              value: PLUS
-              rateLimit:
-                requestsPerUnit: 3
-                unit: MINUTE
+  ratelimit:
+    descriptors:
+    - key: account_id
+      descriptors:
+      - key: plan
+        value: BASIC
+        rateLimit:
+          requestsPerUnit: 1
+          unit: MINUTE
+      - key: plan
+        value: PLUS
+        rateLimit:
+          requestsPerUnit: 3
+          unit: MINUTE
 EOF
 )"
 
@@ -100,17 +97,15 @@ spec:
             name: default-petstore-8080
             namespace: gloo-system
     options:
-      extensions:
-        configs:
-          rateLimitVhostExtension:
-            rateLimits:
-            - actions:
-              - requestHeaders:
-                  descriptorKey: account_id
-                  headerName: x-account-id
-              - requestHeaders:
-                  descriptorKey: plan
-                  headerName: x-plan
+      ratelimit:
+        rateLimits:
+        - actions:
+          - requestHeaders:
+              descriptorKey: account_id
+              headerName: x-account-id
+          - requestHeaders:
+              descriptorKey: plan
+              headerName: x-plan
 EOF
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters

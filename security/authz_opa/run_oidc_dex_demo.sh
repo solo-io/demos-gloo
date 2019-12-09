@@ -31,7 +31,7 @@ set -eu
 trap print_error ERR
 
 # Cleanup old examples
-kubectl --namespace='gloo-system' delete \
+kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
   virtualservice/default \
   secret/"${K8S_SECRET_NAME}" \
@@ -40,13 +40,13 @@ kubectl --namespace='gloo-system' delete \
 # Install DEX OIDC Provider https://github.com/dexidp/dex
 # DEX is not required for Gloo extauth; it is here as an OIDC provider to simplify example
 helm upgrade --install dex stable/dex \
-  --namespace='gloo-system' \
+  --namespace="${GLOO_NAMESPACE}" \
   --wait \
   --values - <<EOF
 grpc: false
 
 config:
-  issuer: http://dex.gloo-system.svc.cluster.local:32000
+  issuer: http://dex.${GLOO_NAMESPACE}.svc.cluster.local:32000
 
   staticClients:
   - id: ${OIDC_CLIENT_ID}
@@ -69,11 +69,11 @@ config:
 EOF
 
 # Create policy ConfigMap
-kubectl --namespace='gloo-system' create configmap "${POLICY_K8S_CONFIGMAP}" \
+kubectl --namespace="${GLOO_NAMESPACE}" create configmap "${POLICY_K8S_CONFIGMAP}" \
   --from-file="${SCRIPT_DIR}/allow-jwt.rego"
 
 # Start port-forwards to allow DEX OIDC Provider to work with Gloo
-port_forward_deployment 'gloo-system' 'dex' '32000:5556'
+port_forward_deployment "${GLOO_NAMESPACE}" 'dex' '32000:5556'
 
 # Install Petclinic example application
 kubectl --namespace='default' apply \
@@ -82,7 +82,7 @@ kubectl --namespace='default' apply \
 
 # glooctl create secret oauth \
 #   --name="${K8S_SECRET_NAME}" \
-#   --namespace='gloo-system' \
+#   --namespace="${GLOO_NAMESPACE}" \
 #   --client-secret="${OIDC_CLIENT_SECRET}"
 
 kubectl apply --filename - <<EOF
@@ -93,13 +93,9 @@ metadata:
   annotations:
     resource_kind: '*v1.Secret'
   name: ${K8S_SECRET_NAME}
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 data:
-  extension: $(base64 --wrap=0 <<EOF2
-config:
-  client_secret: ${OIDC_CLIENT_SECRET}
-EOF2
-)
+  oauth: $(base64 --wrap=0 <(echo -n "client_secret: ${OIDC_CLIENT_SECRET}"))
 EOF
 
 kubectl apply --filename - <<EOF
@@ -107,7 +103,7 @@ apiVersion: enterprise.gloo.solo.io/v1
 kind: AuthConfig
 metadata:
   name: my-oidc
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 spec:
   configs:
   - oauth:
@@ -116,14 +112,14 @@ spec:
       client_id: ${OIDC_CLIENT_ID}
       client_secret_ref:
         name: ${K8S_SECRET_NAME}
-        namespace: gloo-system
+        namespace: "${GLOO_NAMESPACE}"
       issuer_url: ${OIDC_ISSUER_URL}
       scopes:
       - email
   - opa_auth:
       modules:
       - name: ${POLICY_K8S_CONFIGMAP}
-        namespace: gloo-system
+        namespace: "${GLOO_NAMESPACE}"
       query: data.test.allow == true
 EOF
 
@@ -132,7 +128,7 @@ apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   name: default
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 spec:
   displayName: default
   virtualHost:
@@ -145,18 +141,18 @@ spec:
         single:
           upstream:
             name: default-petclinic-8080
-            namespace: gloo-system
+            namespace: "${GLOO_NAMESPACE}"
     options:
       extauth:
-        configRef:
+        config_ref:
           name: my-oidc
-          namespace: gloo-system
+          namespace: "${GLOO_NAMESPACE}"
 EOF
 
-# kubectl --namespace gloo-system get virtualservice/default --output yaml
+# kubectl --namespace="${GLOO_NAMESPACE}" get virtualservice/default --output yaml
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-port_forward_deployment 'gloo-system' 'gateway-proxy' '8080'
+port_forward_deployment "${GLOO_NAMESPACE}" 'gateway-proxy' '8080'
 
 # Wait for demo application to be fully deployed and running
 kubectl --namespace='default' rollout status deployment/petclinic --watch='true'

@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #
-# Starts up a Kubernetes clusterbased on settings in working_environment.sh
+# Starts up a Kubernetes cluster based on settings in working_environment.sh
 
 # Expects
-# brew install kubernetes-cli helm@2
+# brew install kubernetes-cli helm
 
 # Optional
-# brew install kind minikube skaffoldopenshift-cli; brew cask install minishift
+# brew install kind minikube skaffold openshift-cli; brew cask install minishift
 
-GLOO_ENT_VERSION='1.0.0-rc2'
+GLOO_ENT_VERSION='1.0.0-rc3'
 GLOO_OSS_VERSION='1.2.0'
 
 GLOO_NAMESPACE="${GLOO_NAMESPACE:-gloo-system}"
@@ -147,43 +147,6 @@ if [[ -x "$(command -v skaffold)" ]]; then
   skaffold config set --kube-context="$(kubectl config current-context)" \
     local-cluster true
 fi
-
-TILLER_MODE="${TILLER_MODE:-cluster}" # local, cluster, none
-
-unset HELM_HOST
-
-case "${TILLER_MODE}" in
-  local)
-    # Run Tiller locally (external) to Kubernetes cluster as it's faster
-    TILLER_PID_FILE="${SCRIPT_DIR}/tiller.pid"
-    if [[ -f "${TILLER_PID_FILE}" ]]; then
-      xargs kill <"${TILLER_PID_FILE}" && true # Ignore errors
-      rm "${TILLER_PID_FILE}"
-    fi
-    TILLER_PORT=":44134"
-    tiller --storage='secret' --listen="${TILLER_PORT}" &
-    echo $! >"${TILLER_PID_FILE}"
-    export HELM_HOST="${TILLER_PORT}"
-    ;;
-
-  cluster)
-    # Install Helm and Tiller
-    kubectl --namespace='kube-system' create serviceaccount tiller
-
-    kubectl create clusterrolebinding tiller-cluster-rule \
-      --clusterrole='cluster-admin' \
-      --serviceaccount='kube-system:tiller'
-
-    helm init --service-account tiller
-
-    # Wait for tiller to be fully running
-    kubectl --namespace='kube-system' rollout status deployment/tiller-deploy \
-      --watch='true'
-    ;;
-
-  none) ;;
-
-esac
 
 GLOO_MODE="${GLOO_MODE:-ent}" # oss, ent, knative, none
 

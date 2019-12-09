@@ -38,7 +38,7 @@ set -eu
 trap print_error ERR
 
 # Cleanup old examples
-kubectl --namespace='gloo-system' delete \
+kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
   virtualservice/default \
   secret/"${K8S_SECRET_NAME}"
@@ -50,7 +50,7 @@ kubectl --namespace='default' apply \
 
 # glooctl create secret oauth \
 #   --name="${K8S_SECRET_NAME}" \
-#   --namespace='gloo-system' \
+#   --namespace="${GLOO_NAMESPACE}" \
 #   --client-secret="${OIDC_CLIENT_SECRET}"
 
 kubectl apply --filename - <<EOF
@@ -61,13 +61,9 @@ metadata:
   annotations:
     resource_kind: '*v1.Secret'
   name: ${K8S_SECRET_NAME}
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 data:
-  extension: $(base64 --wrap=0 <<EOF2
-config:
-  client_secret: ${OIDC_CLIENT_SECRET}
-EOF2
-)
+  oauth: $(base64 --wrap=0 <(echo -n "client_secret: ${OIDC_CLIENT_SECRET}"))
 EOF
 
 kubectl apply --filename - <<EOF
@@ -75,7 +71,7 @@ apiVersion: enterprise.gloo.solo.io/v1
 kind: AuthConfig
 metadata:
   name: my-oidc
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 spec:
   configs:
   - oauth:
@@ -84,7 +80,7 @@ spec:
       client_id: ${OIDC_CLIENT_ID}
       client_secret_ref:
         name: ${K8S_SECRET_NAME}
-        namespace: gloo-system
+        namespace: "${GLOO_NAMESPACE}"
       issuer_url: ${OIDC_ISSUER_URL}
       scopes: []
 EOF
@@ -94,7 +90,7 @@ apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   name: default
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 spec:
   displayName: default
   virtualHost:
@@ -107,18 +103,18 @@ spec:
         single:
           upstream:
             name: default-petclinic-8080
-            namespace: gloo-system
+            namespace: "${GLOO_NAMESPACE}"
     options:
       extauth:
-        configRef:
+        config_ref:
           name: my-oidc
-          namespace: gloo-system
+          namespace: "${GLOO_NAMESPACE}"
 EOF
 
-# kubectl --namespace gloo-system get virtualservice/default --output yaml
+# kubectl --namespace="${GLOO_NAMESPACE}" get virtualservice/default --output yaml
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-port_forward_deployment 'gloo-system' 'gateway-proxy' '8080'
+port_forward_deployment "${GLOO_NAMESPACE}" 'gateway-proxy' '8080'
 
 # Wait for demo application to be fully deployed and running
 kubectl --namespace='default' rollout status deployment/petclinic --watch='true'

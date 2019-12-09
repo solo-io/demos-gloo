@@ -17,7 +17,7 @@ set -eu
 trap print_error ERR
 
 # Cleanup previous example runs
-kubectl --namespace='gloo-system' delete \
+kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
   virtualservice/default
 
@@ -27,20 +27,20 @@ kubectl --namespace='default' apply \
 
 # glooctl create virtualservice \
 #   --name='default' \
-#   --namespace='gloo-system'
+#   --namespace="${GLOO_NAMESPACE}"
 
 # glooctl add route \
 #   --name default \
 #   --path-prefix='/' \
 #   --dest-name='default-petstore-8080' \
-#   --dest-namespace='gloo-system'
+#   --dest-namespace="${GLOO_NAMESPACE}"
 
 kubectl apply --filename - <<EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   name: default
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 spec:
   displayName: default
   virtualHost:
@@ -53,28 +53,25 @@ spec:
         single:
           upstream:
             name: default-petstore-8080
-            namespace: gloo-system
+            namespace: "${GLOO_NAMESPACE}"
     options:
-      extensions:
-        configs:
-          waf:
-            settings:
-              ruleSets:
-              - ruleStr: |
-                  # Turn rule engine on
-                  SecRuleEngine On
-                  SecRule REQUEST_HEADERS:User-Agent "nikto" "id:107,phase:1,log,deny,t:lowercase,status:403,msg:'well-known port scanning tool'"
+      waf:
+        ruleSets:
+        - ruleStr: |
+            # Turn rule engine on
+            SecRuleEngine On
+            SecRule REQUEST_HEADERS:User-Agent "nikto" "id:107,phase:1,log,deny,t:lowercase,status:403,msg:'well-known port scanning tool'"
 EOF
 
 sleep 10
 
-# kubectl --namespace='gloo-system' get virtualservice/default --output yaml
+# kubectl --namespace="${GLOO_NAMESPACE}" get virtualservice/default --output yaml
 
 # Wait for demo application to be fully deployed and running
 kubectl --namespace='default' rollout status deployment/petstore --watch='true'
 
 # Wait for Gloo proxy to be fully running
-kubectl --namespace='gloo-system' rollout status deployment/gateway-proxy \
+kubectl --namespace="${GLOO_NAMESPACE}" rollout status deployment/gateway-proxy \
   --watch='true'
 
 # Turn on Gloo proxy debug logging
@@ -86,11 +83,11 @@ if [[ -f "${LOGGER_PID_FILE}" ]]; then
   xargs kill <"${LOGGER_PID_FILE}" && true # ignore errors
   rm "${LOGGER_PID_FILE}" "${SCRIPT_DIR}/proxy.log"
 fi
-kubectl --namespace='gloo-system' logs --follow='true' deployment/gateway-proxy >"${SCRIPT_DIR}/proxy.log" &
+kubectl --namespace="${GLOO_NAMESPACE}" logs --follow='true' deployment/gateway-proxy >"${SCRIPT_DIR}/proxy.log" &
 echo $! >"${LOGGER_PID_FILE}"
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-port_forward_deployment 'gloo-system' 'gateway-proxy' '8080'
+port_forward_deployment "${GLOO_NAMESPACE}" 'gateway-proxy' '8080'
 
 # PROXY_URL=$(glooctl proxy url)
 PROXY_URL='http://localhost:8080'

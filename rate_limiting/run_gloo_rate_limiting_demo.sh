@@ -85,30 +85,8 @@ metadata:
   name: ${K8S_SECRET_NAME}
   namespace: gloo-system
 data:
-  extension: $(base64 <<EOF2
-config:
-  client_secret: ${OIDC_CLIENT_SECRET}
-EOF2
-)
+  oauth: $(base64 --wrap=0 <(echo -n "client_secret: ${OIDC_CLIENT_SECRET}"))
 EOF
-
-# glooctl create virtualservice \
-#   --name='default' \
-#   --namespace='gloo-system' \
-#   --enable-oidc-auth \
-#   --oidc-auth-app-url="${OIDC_APP_URL}" \
-#   --oidc-auth-callback-path="${OIDC_CALLBACK_PATH}" \
-#   --oidc-auth-client-id="${OIDC_CLIENT_ID}" \
-#   --oidc-auth-client-secret-name="${K8S_SECRET_NAME}" \
-#   --oidc-auth-client-secret-namespace='gloo-system' \
-#   --oidc-auth-issuer-url="${OIDC_ISSUER_URL}" \
-#   --oidc-scope='email'
-
-# glooctl add route \
-#   --name='default' \
-#   --path-prefix='/' \
-#   --dest-name='default-petclinic-8080' \
-#   --dest-namespace='gloo-system'
 
 kubectl apply --filename - <<EOF
 apiVersion: enterprise.gloo.solo.io/v1
@@ -150,10 +128,8 @@ spec:
             name: default-petclinic-8080
             namespace: gloo-system
       options:
-        extensions:
-          configs:
-            extauth:
-              disable: true
+        extauth:
+          disable: true
     - matchers:
       - prefix: /
       routeAction:
@@ -163,18 +139,16 @@ spec:
             namespace: gloo-system
     options:
       extauth:
-        configRef:
+        config_ref:
           name: my-oidc
           namespace: gloo-system
-      extensions:
-        configs:
-          rate-limit:
-            anonymous_limits:
-              requests_per_unit: 5
-              unit: MINUTE
-            authorized_limits:
-              requests_per_unit: 10
-              unit: MINUTE
+      ratelimit_basic:
+        anonymous_limits:
+          requests_per_unit: 5
+          unit: MINUTE
+        authorized_limits:
+          requests_per_unit: 10
+          unit: MINUTE
 EOF
 
 # kubectl --namespace gloo-system get virtualservice/default --output yaml

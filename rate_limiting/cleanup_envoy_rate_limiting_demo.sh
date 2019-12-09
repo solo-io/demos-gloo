@@ -8,16 +8,16 @@ source "${SCRIPT_DIR}/../working_environment.sh"
 
 cleanup_port_forward_deployment 'gateway-proxy'
 
-kubectl --namespace='gloo-system' delete \
+kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
   virtualservice/default
 
-kubectl --namespace='gloo-system' patch settings/default \
+kubectl --namespace="${GLOO_NAMESPACE}" patch settings/default \
   --type='json' \
   --patch='[
     {
       "op": "remove",
-      "path": "/spec/extensions/configs/envoy-rate-limit"
+      "path": "/spec/ratelimit"
     }
   ]'
 

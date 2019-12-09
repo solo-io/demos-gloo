@@ -37,31 +37,30 @@ if [[ -z "${AUTH0_CLIENT_ID}" ]] || [[ -z "${AUTH0_CLIENT_SECRET}" ]]; then
   exit
 fi
 
-# Install Petclinic example application
-kubectl --namespace='default' apply \
-  --filename="${GLOO_DEMO_RESOURCES_HOME}/petstore.yaml"
-
 UPSTREAM_NAME='auth0'
 
 # Cleanup old examples
-kubectl --namespace='gloo-system' delete \
+kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
   virtualservice/default \
   upstream/"${UPSTREAM_NAME}"
+
+# Install Petclinic example application
+kubectl --namespace='default' apply \
+  --filename="${GLOO_DEMO_RESOURCES_HOME}/petstore.yaml"
 
 kubectl apply --filename - <<EOF
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
   name: "${UPSTREAM_NAME}"
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 spec:
-  upstreamSpec:
-    static:
-      hosts:
-      - addr: ${AUTH0_DOMAIN}
-        port: 443
-      useTls: true
+  static:
+    hosts:
+    - addr: ${AUTH0_DOMAIN}
+      port: 443
+    useTls: true
 EOF
 
 kubectl apply --filename - <<EOF
@@ -69,7 +68,7 @@ apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   name: default
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 spec:
   displayName: default
   virtualHost:
@@ -82,27 +81,25 @@ spec:
         single:
           upstream:
             name: default-petstore-8080
-            namespace: gloo-system
+            namespace: "${GLOO_NAMESPACE}"
     options:
-      extensions:
-        configs:
-          jwt:
-            providers:
-              auth0:
-                issuer: "https://${AUTH0_DOMAIN}/"
-                audiences:
-                - ${AUTH0_AUDIENCE}
-                keepToken: true
-                jwks:
-                  remote:
-                    url: https://${AUTH0_DOMAIN}/.well-known/jwks.json
-                    upstreamRef:
-                      name: "${UPSTREAM_NAME}"
-                      namespace: gloo-system
+      jwt:
+        providers:
+          auth0:
+            issuer: "https://${AUTH0_DOMAIN}/"
+            audiences:
+            - ${AUTH0_AUDIENCE}
+            keep_token: true
+            jwks:
+              remote:
+                url: https://${AUTH0_DOMAIN}/.well-known/jwks.json
+                upstream_ref:
+                  name: "${UPSTREAM_NAME}"
+                  namespace: "${GLOO_NAMESPACE}"
 EOF
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-port_forward_deployment 'gloo-system' 'gateway-proxy' '8080'
+port_forward_deployment "${GLOO_NAMESPACE}" 'gateway-proxy' '8080'
 
 # GLOO_PROXY_URL=$(glooctl proxy url)
 GLOO_PROXY_URL='http://localhost:8080'
