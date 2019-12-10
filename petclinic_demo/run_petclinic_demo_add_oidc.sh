@@ -30,6 +30,7 @@ K8S_SECRET_NAME='my-oauth-secret'
 # Cleanup old examples
 kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
+  authconfig/my-oidc
   secret/"${K8S_SECRET_NAME}"
 
 # glooctl create secret oauth \
@@ -47,11 +48,7 @@ metadata:
   name: ${K8S_SECRET_NAME}
   namespace: "${GLOO_NAMESPACE}"
 data:
-  extension: $(base64 --wrap=0 <<EOF2
-config:
-  client_secret: ${OIDC_CLIENT_SECRET}
-EOF2
-)
+  oauth: $(base64 --wrap=0 <(echo -n "client_secret: ${OIDC_CLIENT_SECRET}"))
 EOF
 
 kubectl apply --filename - <<EOF

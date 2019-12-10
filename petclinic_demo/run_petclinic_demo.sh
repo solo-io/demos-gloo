@@ -62,8 +62,8 @@ metadata:
   namespace: "${GLOO_NAMESPACE}"
 type: Opaque
 data:
-  aws_access_key_id: $(echo -n "${AWS_ACCESS_KEY}" | base64 --wrap='0' -)
-  aws_secret_access_key: $(echo -n "${AWS_SECRET_KEY}" | base64 --wrap='0' -)
+  aws_access_key_id: $(base64 --wrap='0' <(echo -n "${AWS_ACCESS_KEY}"))
+  aws_secret_access_key: $(base64 --wrap='0' <(echo -n "${AWS_SECRET_KEY}"))
 EOF
 
   # glooctl create upstream aws \
@@ -80,12 +80,11 @@ metadata:
   name: aws
   namespace: "${GLOO_NAMESPACE}"
 spec:
-  upstreamSpec:
-    aws:
-      region: us-east-1
-      secretRef:
-        name: aws
-        namespace: "${GLOO_NAMESPACE}"
+  aws:
+    region: us-east-1
+    secret_ref:
+      name: aws
+      namespace: "${GLOO_NAMESPACE}"
 EOF
 fi # Configure AWS upstream
 

@@ -8,8 +8,8 @@
 # Optional
 # brew install kind minikube skaffold openshift-cli; brew cask install minishift
 
-GLOO_ENT_VERSION='1.0.0-rc3'
-GLOO_OSS_VERSION='1.2.0'
+GLOO_ENT_VERSION='1.0.0-rc4'
+GLOO_OSS_VERSION='1.2.4'
 
 GLOO_NAMESPACE="${GLOO_NAMESPACE:-gloo-system}"
 
@@ -114,7 +114,7 @@ case "${K8S_TOOL}" in
 
     gcloud container clusters delete "${DEMO_CLUSTER_NAME}" --quiet && true # Ignore errors
     gcloud beta container clusters create "${DEMO_CLUSTER_NAME}" \
-      --release-channel='stable' \
+      --release-channel='regular' \
       --machine-type='n1-standard-2' \
       --num-nodes='3' \
       --no-enable-basic-auth \
