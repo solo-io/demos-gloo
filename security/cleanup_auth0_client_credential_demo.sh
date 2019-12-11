@@ -12,7 +12,7 @@ cleanup_port_forward_deployment 'gateway-proxy'
 kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
   virtualservice/default \
-  upstream/auth0
+  upstream/oauth
 
 kubectl --namespace='default' delete \
   --ignore-not-found='true' \

@@ -3,7 +3,7 @@
 # Based on GlooE Custom Auth server example
 # https://gloo.solo.io/enterprise/authentication/oidc/
 
-OIDC_PROVIDER=${OIDC_PROVIDER:-dex} # dex, google, sfdc
+OIDC_PROVIDER=${OIDC_PROVIDER:-dex} # dex, google, sfdc, azure
 
 K8S_SECRET_NAME='my-oauth-secret'
 
@@ -93,15 +93,28 @@ EOF
     OIDC_APP_URL='http://localhost:8080/'
     OIDC_CALLBACK_PATH='http://localhost:8080/callback'
 
-    # OIDC_CLIENT_ID='<consumer key>'
-    # OIDC_CLIENT_SECRET='<consumer secret>'
-
     # Configure Credentials
     if [[ -f "${HOME}/scripts/secret/sfdc_oidc_credentials.sh" ]]; then
       # OIDC_CLIENT_ID='<consumer key>'
       # OIDC_CLIENT_SECRET='<consumer secret>'
       source "${HOME}/scripts/secret/sfdc_oidc_credentials.sh"
     fi
+    ;;
+
+  azure)
+    # OIDC Configuration
+    OIDC_APP_URL='http://localhost:8080/'
+    OIDC_CALLBACK_PATH='http://localhost:8080/callback'
+
+    # Configure Credentials
+    if [[ -f "${HOME}/scripts/secret/azure_oidc_credentials.sh" ]]; then
+      # AZURE_TENANT='<Directory (tenant) ID>'
+      # OIDC_CLIENT_ID='<consumer key>'
+      # OIDC_CLIENT_SECRET='<consumer secret>'
+      source "${HOME}/scripts/secret/azure_oidc_credentials.sh"
+    fi
+
+    OIDC_ISSUER_URL="https://login.microsoftonline.com/${AZURE_TENANT}/v2.0/"
     ;;
 esac
 

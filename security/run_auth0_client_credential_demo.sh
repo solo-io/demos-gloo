@@ -37,7 +37,7 @@ if [[ -z "${AUTH0_CLIENT_ID}" ]] || [[ -z "${AUTH0_CLIENT_SECRET}" ]]; then
   exit
 fi
 
-UPSTREAM_NAME='auth0'
+UPSTREAM_NAME='oauth'
 
 # Cleanup old examples
 kubectl --namespace="${GLOO_NAMESPACE}" delete \
@@ -110,7 +110,7 @@ kubectl --namespace='default' rollout status deployment/petstore --watch='true'
 sleep 5
 
 # Authenticate with Auth0 to get Access Token
-# AUTH0_TOKEN=$(curl --silent --request POST \
+# ACCESS_TOKEN=$(curl --silent --request POST \
 #   --url "https://${AUTH0_DOMAIN}/oauth/token" \
 #   --header 'content-type: application/json' \
 #   --data @- <<EOF | jq --raw-output '.access_token'
@@ -122,7 +122,7 @@ sleep 5
 # }
 # EOF
 # )
-AUTH0_TOKEN=$(
+ACCESS_TOKEN=$(
   http POST "https://${AUTH0_DOMAIN}/oauth/token" \
     grant_type=client_credentials \
     audience="${AUTH0_AUDIENCE}" \
@@ -133,15 +133,15 @@ AUTH0_TOKEN=$(
 # Call Gloo with Bearer Token
 printf "\nShould return 200 OK\n"
 # curl --verbose --silent \
-#   --header "authorization: Bearer ${AUTH0_TOKEN}" \
+#   --header "authorization: Bearer ${ACCESS_TOKEN}" \
 #   "${GLOO_PROXY_URL}/api/pets"
-http "${GLOO_PROXY_URL}/api/pets" "authorization:Bearer ${AUTH0_TOKEN}"
+http "${GLOO_PROXY_URL}/api/pets" "authorization:Bearer ${ACCESS_TOKEN}"
 
-# printf "Auth0 Token = %s" "${AUTH0_TOKEN}"
+# printf "Auth0 Token = %s" "${ACCESS_TOKEN}"
 
 printf "\nShould return 401 Unauthorized\n"
-TAMPERED_AUTH0_TOKEN='eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6IlFrSkZSRUkyT0RkR1FrWkRPRU13TUVRNVFVUXdRVEUxUmpoRk9FSXpRVEpCTkVGQlFrSkROdyJ9.eyJpc3NiOiJodHRwczovL3NvbG9sYWJzLmF1dGgwLmNvbS8iLCJzdWIiOiJxWU02eVkwb0VKSGtpUmY1dW5tYmRNTDFkNGtkdmxHMkBjbGllbnRzIiwiYXVkIjoiL3BldHN0b3JlIiwiaWF0IjoxNTcyNDUzMjIzLCJleHAiOjE1NzI1Mzk2MjMsImF6cCI6InFZTTZ5WTBvRUpIa2lSZjV1bm1iZE1MMWQ0a2R2bEcyIiwiZ3R5IjoiY2xpZW50LWNyZWRlbnRpYWxzIn0.aNoIvX1M4_3PqCc5DGZWp2dHmiRGqZUZ_CZHyWcvd_iTA2WXIlJRV55b822HB7G8AHOIrrNzFwdQEb4TtH9KGa13lE28OezCSvlua_7pXzq_B_0RhxEbLFILDZceFmXSD09dXczrSv-tQhJNBPMUC2y-WOYqaRfavhr9vS6_7saNg7F5c9-7Ay7sI8O13-LgvN9nPJAPMe3xKen-WCK0xbAeyVmrWh7yuNK9bPW14Ga1xfDbhh8bMouGh57P7bOhY_v65HeIsKYszTH_WWpZ5XO9GRDrkyY6Yeba0PbujmINkoP8hE7xQ9zPNRUPj0oGPPPptOLG87j8Tye3YkoROw'
+TAMPERED_ACCESS_TOKEN='eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6IlFrSkZSRUkyT0RkR1FrWkRPRU13TUVRNVFVUXdRVEUxUmpoRk9FSXpRVEpCTkVGQlFrSkROdyJ9.eyJpc3NiOiJodHRwczovL3NvbG9sYWJzLmF1dGgwLmNvbS8iLCJzdWIiOiJxWU02eVkwb0VKSGtpUmY1dW5tYmRNTDFkNGtkdmxHMkBjbGllbnRzIiwiYXVkIjoiL3BldHN0b3JlIiwiaWF0IjoxNTcyNDUzMjIzLCJleHAiOjE1NzI1Mzk2MjMsImF6cCI6InFZTTZ5WTBvRUpIa2lSZjV1bm1iZE1MMWQ0a2R2bEcyIiwiZ3R5IjoiY2xpZW50LWNyZWRlbnRpYWxzIn0.aNoIvX1M4_3PqCc5DGZWp2dHmiRGqZUZ_CZHyWcvd_iTA2WXIlJRV55b822HB7G8AHOIrrNzFwdQEb4TtH9KGa13lE28OezCSvlua_7pXzq_B_0RhxEbLFILDZceFmXSD09dXczrSv-tQhJNBPMUC2y-WOYqaRfavhr9vS6_7saNg7F5c9-7Ay7sI8O13-LgvN9nPJAPMe3xKen-WCK0xbAeyVmrWh7yuNK9bPW14Ga1xfDbhh8bMouGh57P7bOhY_v65HeIsKYszTH_WWpZ5XO9GRDrkyY6Yeba0PbujmINkoP8hE7xQ9zPNRUPj0oGPPPptOLG87j8Tye3YkoROw'
 # curl --verbose --silent \
-#   --header "authorization: Bearer ${TAMPERED_AUTH0_TOKEN}" \
+#   --header "authorization: Bearer ${TAMPERED_ACCESS_TOKEN}" \
 #   "${GLOO_PROXY_URL}/api/pets"
-http "${GLOO_PROXY_URL}/api/pets" "authorization:Bearer ${TAMPERED_AUTH0_TOKEN}"
+http "${GLOO_PROXY_URL}/api/pets" "authorization:Bearer ${TAMPERED_ACCESS_TOKEN}"
