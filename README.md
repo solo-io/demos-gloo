@@ -13,6 +13,8 @@ These scripts have been heavily test on macOS, and should work on any operating 
 * `kubectl`
 * `curl` or `httpie`
 
+Some *nix utilities like `base64` (`brew install base64` or `brew install coreutils`)
+
 Some scripts also use `jq` to help parse responses to make them more human friendly
 
 All scripts assume you've made a local copy of this repository (`git clone`) as there are some assumptions about directory hierarchy.
@@ -30,3 +32,34 @@ These examples may use a number of example Kubernetes services whose manifests a
 ## Staying in Touch
 
 * Join our [Solo.io Slack community](slack.solo.io)
+
+## Helpful Gloo Debugging Commands
+
+### Get Gloo gateway proxy information
+
+```shell
+kubectl --namespace gloo-system deployment/gateway-proxy 19000
+http://localhost:19000
+```
+
+### Change log level
+
+```shell
+kubectl --namespace='gloo-system' port-forward deployment/gateway-proxy 19000 &
+PROXY_PID=$!
+sleep 2
+curl --request POST 'http://localhost:19000/logging?level=debug'
+kill ${PROXY_PID}
+```
+
+### Check configuration
+
+```shell
+glooctl check
+```
+
+### Get Gloo logs
+
+```shell
+glooctl proxy logs
+```

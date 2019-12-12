@@ -24,7 +24,7 @@ case "${K8S_TOOL}" in
     ;;
 
   gcloud)
-    gcloud container clusters delete "${DEMO_CLUSTER_NAME:-gke-gloo}" --quiet
+    gcloud container clusters delete "$(whoami)-${DEMO_CLUSTER_NAME:-gke-gloo}" --quiet
     ;;
 
   custom) ;;
