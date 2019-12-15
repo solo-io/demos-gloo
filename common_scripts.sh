@@ -32,9 +32,9 @@ function wait_for_k8s_metrics_server() {
 
 # Creates k8s port-foward in background and tracks background process pid
 # Parameters
-# * Namespace
-# * Name
-# * Port
+# - Namespace
+# - Name
+# - Port
 function port_forward_deployment() {
   NAMESPACE=$1
   NAME=$2
@@ -49,7 +49,7 @@ function port_forward_deployment() {
 
 # Deletes background port-forward
 # Parameters
-# * Name
+# - Name
 function cleanup_port_forward_deployment() {
   NAME=$1
 
