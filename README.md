@@ -23,7 +23,9 @@ All scripts assume you've made a local copy of this repository (`git clone`) as 
 
 Check the environment variable settings in [`working_environment.sh`](working_environment.sh) to ensure they match you're environment
 
-[`start_cluster.sh`](start_cluster.sh) will start a Kubernetes cluster and install Gloo based on the settings in [`working_environment.sh`](working_environment.sh). [`stop_cluster.sh`](stop_cluster.sh) will shutdown the Kubernetes cluster created by [`start_cluster.sh`](start_cluster.sh).
+[`start_cluster.sh`](start_cluster.sh) will start a Kubernetes cluster based on the settings in [`working_environment.sh`](working_environment.sh). [`stop_cluster.sh`](stop_cluster.sh) will shutdown the Kubernetes cluster created by [`start_cluster.sh`](start_cluster.sh).
+
+[`install_gloo.sh`](install_gloo.sh) will install Gloo into the current Kubernetes cluster based on the settings in [`working_environment.sh`](working_environment.sh). [`uninstall_gloo.sh`](uninstall_gloo.sh) will uninstall Gloo.
 
 In the included directories there are a number of `run_xxx_demo.sh` scripts that you can run once you have a running and accessible Kubernetes cluster. Accessible means that calls to `kubectl` will correctly access your target cluster. There are matched `cleanup_xxx_demo.sh` scripts that will remove all deployed images and manifests used by associated demo. The cleanup scripts may also kill background process the run scripts created specially for `kubectl port-forward` processes. The background processes are tracked through `*.pid` files created by the run scripts.
 

@@ -251,16 +251,6 @@ spec:
           namespace: "${GLOO_NAMESPACE}"
 EOF
 
-# Enable Function Discovery for all Upstreams
-kubectl --namespace="${GLOO_NAMESPACE}" patch settings/default \
-  --type='merge' \
-  --patch "$(cat<<EOF
-spec:
-  discovery:
-    fdsMode: BLACKLIST
-EOF
-)"
-
 #
 # Enable localhost access to cluster and open web brower clients
 #

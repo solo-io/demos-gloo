@@ -8,9 +8,6 @@
 # Optional
 # brew install kind minikube skaffold openshift-cli; brew cask install minishift
 
-GLOO_ENT_VERSION='1.0.0-rc5'
-GLOO_OSS_VERSION='1.2.8'
-
 GLOO_NAMESPACE="${GLOO_NAMESPACE:-gloo-system}"
 
 K8S_VERSION='latest'
@@ -115,7 +112,7 @@ case "${K8S_TOOL}" in
     gcloud container clusters delete "${DEMO_CLUSTER_NAME}" --quiet && true # Ignore errors
     gcloud beta container clusters create "${DEMO_CLUSTER_NAME}" \
       --release-channel='regular' \
-      --machine-type='n1-standard-2' \
+      --machine-type='n1-standard-4' \
       --num-nodes='3' \
       --no-enable-basic-auth \
       --enable-ip-alias \
@@ -147,61 +144,3 @@ if [[ -x "$(command -v skaffold)" ]]; then
   skaffold config set --kube-context="$(kubectl config current-context)" \
     local-cluster true
 fi
-
-GLOO_MODE="${GLOO_MODE:-ent}" # oss, ent, knative, none
-
-case "${GLOO_MODE}" in
-  ent)
-    GLOO_VERSION="${GLOO_VERSION:-$GLOO_ENT_VERSION}"
-
-    if [[ -f "${HOME}/scripts/secret/glooe_license_key.sh" ]]; then
-      # export GLOOE_LICENSE_KEY=<valid key>
-      source "${HOME}/scripts/secret/glooe_license_key.sh"
-    fi
-    if [[ -z "${GLOOE_LICENSE_KEY}" ]]; then
-      echo 'You must set GLOOE_LICENSE_KEY with GlooE activation key'
-      exit
-    fi
-
-    helm repo add glooe 'http://storage.googleapis.com/gloo-ee-helm'
-    helm repo update
-    kubectl create namespace "${GLOO_NAMESPACE}"
-    helm upgrade --install glooe glooe/gloo-ee \
-      --namespace="${GLOO_NAMESPACE}" \
-      --version="${GLOO_VERSION}" \
-      --set="license_key=${GLOOE_LICENSE_KEY}" \
-      --set="gloo.gatewayProxies.gatewayProxy.readConfig=true"
-    ;;
-
-  oss)
-    GLOO_VERSION="${GLOO_VERSION:-$GLOO_OSS_VERSION}"
-
-    helm repo add gloo 'https://storage.googleapis.com/solo-public-helm'
-    helm repo update
-    kubectl create namespace "${GLOO_NAMESPACE}"
-    helm upgrade --install gloo gloo/gloo \
-      --namespace="${GLOO_NAMESPACE}" \
-      --version="${GLOO_VERSION}" \
-      --set="gatewayProxies.gatewayProxy.readConfig=true"
-
-      # needed for minishift 3.11 and Gloo 1.2.0
-      # --set="gateway.certGenJob.setTtlAfterFinished=false"
-    ;;
-
-  knative)
-    GLOO_VERSION="${GLOO_VERSION:-$GLOO_OSS_VERSION}"
-
-    helm repo add gloo 'https://storage.googleapis.com/solo-public-helm'
-    helm repo update
-    helm fetch --untar='true' --untardir='.' --version="${GLOO_VERSION}" \
-      gloo/gloo
-    kubectl create namespace "${GLOO_NAMESPACE}"
-    helm upgrade --install gloo gloo/gloo \
-      --namespace="${GLOO_NAMESPACE}" \
-      --version="${GLOO_VERSION}" \
-      --values='gloo/values-knative.yaml'
-    ;;
-
-  none) ;;
-
-esac

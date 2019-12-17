@@ -6,8 +6,8 @@ GLOO_MODE='ent'     # oss, ent, knative, none
 
 GLOO_NAMESPACE='gloo-system'
 
-GLOO_VERSION='1.0.0-rc5' # ent
-# GLOO_VERSION='1.2.8' # oss
+GLOO_VERSION='1.0.0-rc7' # ent
+# GLOO_VERSION='1.2.10' # oss
 
 GLOO_DEMO_HOME="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
