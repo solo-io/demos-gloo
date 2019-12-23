@@ -10,13 +10,17 @@ K8S_TOOL="${K8S_TOOL:-kind}"
 
 case "${K8S_TOOL}" in
   kind)
-    unset KUBECONFIG
-
     kind delete cluster --name="${DEMO_CLUSTER_NAME:-kind}"
     ;;
 
   minikube)
     minikube delete --profile="${DEMO_CLUSTER_NAME:-minikube}"
+    ;;
+
+  k3d)
+    unset KUBECONFIG
+
+    k3d delete --name="${DEMO_CLUSTER_NAME:-k3s-default}"
     ;;
 
   minishift)

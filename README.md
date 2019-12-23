@@ -8,7 +8,7 @@ These scripts have been heavily test on macOS, and should work on any operating 
 
 ## Pre-requisites
 
-* If using include [`start_cluster.sh`](start_cluster.sh) script one of the following Kubernetes environments: `minikube`, `kind`, `minishift`, OpenShift, Google GKE
+* If using include [`start_cluster.sh`](start_cluster.sh) script one of the following Kubernetes environments: `minikube`, `kind`, `k3d`, `minishift`, OpenShift, Google GKE
 * `helm` or `glooctl` to install Gloo Enterprise, and a valid (Trial) Gloo Enterprise License
 * `kubectl`
 * `curl` or `httpie`

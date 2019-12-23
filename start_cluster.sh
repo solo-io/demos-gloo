@@ -6,7 +6,7 @@
 # brew install kubernetes-cli helm
 
 # Optional
-# brew install kind minikube skaffold openshift-cli; brew cask install minishift
+# brew install kind k3d minikube skaffold openshift-cli; brew cask install minishift
 
 GLOO_NAMESPACE="${GLOO_NAMESPACE:-gloo-system}"
 
@@ -72,6 +72,28 @@ case "${K8S_TOOL}" in
     fi
 
     source <(minikube docker-env --profile="${DEMO_CLUSTER_NAME}")
+    ;;
+
+  k3d)
+    DEMO_CLUSTER_NAME="${DEMO_CLUSTER_NAME:-k3s-default}"
+
+    # Delete existing cluster, i.e. restart cluster
+    if [[ "$(k3d list)" == *"${DEMO_CLUSTER_NAME}"* ]]; then
+      k3d delete --name="${DEMO_CLUSTER_NAME}"
+    fi
+
+    # Setup local Kubernetes cluster using k3d
+    if [[ "${K8S_VERSION}" == 'latest' ]]; then
+      k3d create --name="${DEMO_CLUSTER_NAME}" \
+        --wait='60'
+    else
+      k3d create --name="${DEMO_CLUSTER_NAME}" \
+        --image="docker.io/rancher/k3s:${K8S_VERSION}" \
+        --wait='60'
+    fi
+
+    KUBECONFIG=$(k3d get-kubeconfig --name="${DEMO_CLUSTER_NAME}")
+    export KUBECONFIG
     ;;
 
   minishift)
