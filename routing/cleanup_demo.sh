@@ -8,10 +8,15 @@ source "${SCRIPT_DIR}/../common_scripts.sh"
 source "${SCRIPT_DIR}/../working_environment.sh"
 
 cleanup_port_forward_deployment 'gateway-proxy'
+cleanup_port_forward_deployment 'ingress-proxy'
 
 kubectl --namespace='gloo-system' delete \
   --ignore-not-found='true' \
   virtualservice/default
+
+  kubectl --namespace='default' delete \
+  --ignore-not-found='true' \
+  ingress/petstore-ingress
 
   kubectl --namespace='default' delete \
   --ignore-not-found='true' \
