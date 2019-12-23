@@ -85,30 +85,28 @@ metadata:
   name: ${K8S_SECRET_NAME}
   namespace: gloo-system
 data:
-  extension: $(base64 <<EOF2
-config:
-  client_secret: ${OIDC_CLIENT_SECRET}
-EOF2
-)
+  oauth: $(base64 --wrap=0 <(echo -n "client_secret: ${OIDC_CLIENT_SECRET}"))
 EOF
 
-# glooctl create virtualservice \
-#   --name='default' \
-#   --namespace='gloo-system' \
-#   --enable-oidc-auth \
-#   --oidc-auth-app-url="${OIDC_APP_URL}" \
-#   --oidc-auth-callback-path="${OIDC_CALLBACK_PATH}" \
-#   --oidc-auth-client-id="${OIDC_CLIENT_ID}" \
-#   --oidc-auth-client-secret-name="${K8S_SECRET_NAME}" \
-#   --oidc-auth-client-secret-namespace='gloo-system' \
-#   --oidc-auth-issuer-url="${OIDC_ISSUER_URL}" \
-#   --oidc-scope='email'
-
-# glooctl add route \
-#   --name='default' \
-#   --path-prefix='/' \
-#   --dest-name='default-petclinic-8080' \
-#   --dest-namespace='gloo-system'
+kubectl apply --filename - <<EOF
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: my-oidc
+  namespace: gloo-system
+spec:
+  configs:
+  - oauth:
+      app_url: ${OIDC_APP_URL}
+      callback_path: ${OIDC_CALLBACK_PATH}
+      client_id: ${OIDC_CLIENT_ID}
+      client_secret_ref:
+        name: ${K8S_SECRET_NAME}
+        namespace: gloo-system
+      issuer_url: ${OIDC_ISSUER_URL}
+      scopes:
+      - email
+EOF
 
 kubectl apply --filename - <<EOF
 apiVersion: gateway.solo.io/v1
@@ -122,53 +120,41 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /vets
+    - matchers:
+      - prefix: /vets
       routeAction:
         single:
           upstream:
             name: default-petclinic-8080
             namespace: gloo-system
-      routePlugins:
-        extensions:
-          configs:
-            extauth:
-              disable: true
-    - matcher:
-        prefix: /
+      options:
+        extauth:
+          disable: true
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
             name: default-petclinic-8080
             namespace: gloo-system
-    virtualHostPlugins:
-      extensions:
-        configs:
-          extauth:
-            configs:
-            - oauth:
-                app_url: ${OIDC_APP_URL}
-                callback_path: ${OIDC_CALLBACK_PATH}
-                client_id: ${OIDC_CLIENT_ID}
-                client_secret_ref:
-                  name: ${K8S_SECRET_NAME}
-                  namespace: gloo-system
-                issuer_url: ${OIDC_ISSUER_URL}
-                scopes:
-                - email
-          rate-limit:
-            anonymous_limits:
-              requests_per_unit: 5
-              unit: MINUTE
-            authorized_limits:
-              requests_per_unit: 10
-              unit: MINUTE
+    options:
+      extauth:
+        config_ref:
+          name: my-oidc
+          namespace: gloo-system
+      ratelimit_basic:
+        anonymous_limits:
+          requests_per_unit: 5
+          unit: MINUTE
+        authorized_limits:
+          requests_per_unit: 10
+          unit: MINUTE
 EOF
 
 # kubectl --namespace gloo-system get virtualservice/default --output yaml
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-port_forward_deployment 'gloo-system' 'gateway-proxy-v2' '8080'
+port_forward_deployment 'gloo-system' 'gateway-proxy' '8080'
 
 # Wait for demo application to be fully deployed and running
 kubectl --namespace='default' rollout status deployment/petclinic --watch='true'

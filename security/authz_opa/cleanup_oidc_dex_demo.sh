@@ -6,15 +6,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 source "${SCRIPT_DIR}/../../common_scripts.sh"
 source "${SCRIPT_DIR}/../../working_environment.sh"
 
-K8S_SECRET_NAME='my-oauth-secret'
-POLICY_K8S_CONFIGMAP='allow-jwt'
+cleanup_port_forward_deployment 'gateway-proxy'
 
-cleanup_port_forward_deployment 'gateway-proxy-v2'
-
-kubectl --namespace='gloo-system' delete \
+kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
   virtualservice/default \
-  secret/"${K8S_SECRET_NAME}"
+  authconfig/my-oidc \
+  secret/my-oauth-secret
 
 kubectl --namespace='default' delete \
   --ignore-not-found='true' \
@@ -23,8 +21,8 @@ kubectl --namespace='default' delete \
 
 cleanup_port_forward_deployment 'dex'
 
-kubectl --namespace='gloo-system' delete \
+kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
-  configmap/"${POLICY_K8S_CONFIGMAP}"
+  configmap/allow-jwt
 
-helm delete --purge dex
+helm uninstall --namespace="${GLOO_NAMESPACE}" dex

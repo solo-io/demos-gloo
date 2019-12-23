@@ -3,7 +3,7 @@
 # Based on GlooE Custom Auth server example
 # https://gloo.solo.io/enterprise/authentication/oidc/
 
-OIDC_PROVIDER=${OIDC_PROVIDER:-dex} # dex, google, sfdc
+OIDC_PROVIDER=${OIDC_PROVIDER:-dex} # dex, google, sfdc, azure
 
 K8S_SECRET_NAME='my-oauth-secret'
 
@@ -25,7 +25,7 @@ trap print_error ERR
 case "${OIDC_PROVIDER}" in
   dex)
     # OIDC Configuration
-    OIDC_ISSUER_URL='http://dex.gloo-system.svc.cluster.local:32000/'
+    OIDC_ISSUER_URL="http://dex.${GLOO_NAMESPACE}.svc.cluster.local:32000/"
     OIDC_APP_URL='http://localhost:8080/'
     OIDC_CALLBACK_PATH='/callback'
 
@@ -37,13 +37,13 @@ case "${OIDC_PROVIDER}" in
     # Install DEX OIDC Provider https://github.com/dexidp/dex
     # DEX is not required for Gloo extauth; it is here as an example local OIDC provider
     helm upgrade --install dex stable/dex \
-      --namespace='gloo-system' \
+      --namespace="${GLOO_NAMESPACE}" \
       --wait \
       --values - <<EOF
 grpc: false
 
 config:
-  issuer: http://dex.gloo-system.svc.cluster.local:32000
+  issuer: http://dex.${GLOO_NAMESPACE}.svc.cluster.local:32000
 
   staticClients:
   - id: ${OIDC_CLIENT_ID}
@@ -66,7 +66,7 @@ config:
 EOF
 
     # Start port-forwards to allow DEX OIDC Provider to work with Gloo
-    port_forward_deployment 'gloo-system' 'dex' '32000:5556'
+    port_forward_deployment "${GLOO_NAMESPACE}" 'dex' '32000:5556'
     ;;
 
   google)
@@ -93,15 +93,28 @@ EOF
     OIDC_APP_URL='http://localhost:8080/'
     OIDC_CALLBACK_PATH='http://localhost:8080/callback'
 
-    # OIDC_CLIENT_ID='<consumer key>'
-    # OIDC_CLIENT_SECRET='<consumer secret>'
-
     # Configure Credentials
     if [[ -f "${HOME}/scripts/secret/sfdc_oidc_credentials.sh" ]]; then
       # OIDC_CLIENT_ID='<consumer key>'
       # OIDC_CLIENT_SECRET='<consumer secret>'
       source "${HOME}/scripts/secret/sfdc_oidc_credentials.sh"
     fi
+    ;;
+
+  azure)
+    # OIDC Configuration
+    OIDC_APP_URL='http://localhost:8080/'
+    OIDC_CALLBACK_PATH='http://localhost:8080/callback'
+
+    # Configure Credentials
+    if [[ -f "${HOME}/scripts/secret/azure_oidc_credentials.sh" ]]; then
+      # AZURE_TENANT='<Directory (tenant) ID>'
+      # OIDC_CLIENT_ID='<consumer key>'
+      # OIDC_CLIENT_SECRET='<consumer secret>'
+      source "${HOME}/scripts/secret/azure_oidc_credentials.sh"
+    fi
+
+    OIDC_ISSUER_URL="https://login.microsoftonline.com/${AZURE_TENANT}/v2.0/"
     ;;
 esac
 
@@ -115,7 +128,7 @@ if [[ -z "${OIDC_CLIENT_ID}" ]] ||
 fi
 
 # Cleanup old examples
-kubectl --namespace='gloo-system' delete \
+kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
   virtualservice/default \
   secret/"${K8S_SECRET_NAME}"
@@ -127,7 +140,7 @@ kubectl --namespace='default' apply \
 
 # glooctl create secret oauth \
 #   --name="${K8S_SECRET_NAME}" \
-#   --namespace='gloo-system' \
+#   --namespace="${GLOO_NAMESPACE}" \
 #   --client-secret="${OIDC_CLIENT_SECRET}"
 
 kubectl apply --filename - <<EOF
@@ -138,13 +151,9 @@ metadata:
   annotations:
     resource_kind: '*v1.Secret'
   name: ${K8S_SECRET_NAME}
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 data:
-  extension: $(base64 --wrap=0 <<EOF2
-config:
-  client_secret: ${OIDC_CLIENT_SECRET}
-EOF2
-)
+  oauth: $(base64 --wrap=0 <(echo -n "client_secret: ${OIDC_CLIENT_SECRET}"))
 EOF
 
 kubectl apply --filename - <<EOF
@@ -152,7 +161,7 @@ apiVersion: enterprise.gloo.solo.io/v1
 kind: AuthConfig
 metadata:
   name: my-oidc
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 spec:
   configs:
   - oauth:
@@ -161,7 +170,7 @@ spec:
       client_id: ${OIDC_CLIENT_ID}
       client_secret_ref:
         name: ${K8S_SECRET_NAME}
-        namespace: gloo-system
+        namespace: "${GLOO_NAMESPACE}"
       issuer_url: ${OIDC_ISSUER_URL}
       scopes: ${OIDC_SCOPES:-[]}
 EOF
@@ -171,32 +180,31 @@ apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   name: default
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 spec:
   displayName: default
   virtualHost:
     domains:
     - '*'
-    name: gloo-system.default
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
             name: default-petclinic-8080
-            namespace: gloo-system
-    virtualHostPlugins:
+            namespace: "${GLOO_NAMESPACE}"
+    options:
       extauth:
         config_ref:
           name: my-oidc
-          namespace: gloo-system
+          namespace: "${GLOO_NAMESPACE}"
 EOF
 
-# kubectl --namespace gloo-system get virtualservice/default --output yaml
+# kubectl --namespace="${GLOO_NAMESPACE}" get virtualservice/default --output yaml
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-port_forward_deployment 'gloo-system' 'gateway-proxy-v2' '8080'
+port_forward_deployment "${GLOO_NAMESPACE}" 'gateway-proxy' '8080'
 
 # Wait for demo application to be fully deployed and running
 kubectl --namespace='default' rollout status deployment/petclinic --watch='true'

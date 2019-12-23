@@ -9,10 +9,10 @@ source "${SCRIPT_DIR}/../working_environment.sh"
 K8S_SECRET_NAME='my-oauth-secret'
 POLICY_K8S_CONFIGMAP='allow-jwt'
 
-cleanup_port_forward_deployment 'gateway-proxy-v2'
+cleanup_port_forward_deployment 'gateway-proxy'
 cleanup_port_forward_deployment 'api-server'
 
-kubectl --namespace='gloo-system' delete \
+kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
   virtualservice/default \
   "secret/${K8S_SECRET_NAME}"
@@ -24,7 +24,7 @@ kubectl --namespace='default' delete \
 
 cleanup_port_forward_deployment 'dex'
 
-kubectl --namespace='gloo-system' delete \
+kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
   configmap/"${POLICY_K8S_CONFIGMAP}"
 

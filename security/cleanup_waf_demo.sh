@@ -15,9 +15,9 @@ fi
 # Reset Gloo proxy logging to info
 set_gloo_proxy_log_level info
 
-cleanup_port_forward_deployment 'gateway-proxy-v2'
+cleanup_port_forward_deployment 'gateway-proxy'
 
-kubectl --namespace='gloo-system' delete \
+kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
   virtualservice/default
 

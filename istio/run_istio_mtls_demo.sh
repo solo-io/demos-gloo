@@ -60,10 +60,10 @@ kubectl --namespace='default' apply \
   --filename='https://raw.githubusercontent.com/istio/istio/release-1.3/samples/bookinfo/platform/kube/bookinfo.yaml' \
   --filename='https://raw.githubusercontent.com/istio/istio/release-1.3/samples/bookinfo/networking/destination-rule-all-mtls.yaml'
 
-# kubectl --namespace='gloo-system' get deployment/gateway-proxy-v2 --output='json' > gateway-original.json
+# kubectl --namespace='gloo-system' get deployment/gateway-proxy --output='json' > gateway-original.json
 
 # Patch Gateway Proxy to reference Istio SDS over Unix Domain Sockets
-kubectl --namespace='gloo-system' patch deployment/gateway-proxy-v2 \
+kubectl --namespace='gloo-system' patch deployment/gateway-proxy \
   --type='json' \
   --patch='[
   {
@@ -114,7 +114,7 @@ kubectl --namespace='gloo-system' patch deployment/gateway-proxy-v2 \
   }
 ]'
 
-# kubectl --namespace='gloo-system' get deployment/gateway-proxy-v2 --output='json' > gateway-modified.json
+# kubectl --namespace='gloo-system' get deployment/gateway-proxy --output='json' > gateway-modified.json
 
 kubectl --namespace='default' rollout status deployment/productpage-v1 --watch='true'
 
@@ -180,8 +180,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
@@ -190,7 +190,7 @@ spec:
 EOF
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-port_forward_deployment 'gloo-system' 'gateway-proxy-v2' '8080'
+port_forward_deployment 'gloo-system' 'gateway-proxy' '8080'
 
 sleep 10
 

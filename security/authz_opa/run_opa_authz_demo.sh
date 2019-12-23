@@ -17,71 +17,70 @@ trap print_error ERR
 POLICY_K8S_CONFIGMAP='allow-get-users'
 
 # Cleanup previous example runs
-kubectl --namespace='gloo-system' delete \
+kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
   virtualservice/default \
+  authconfig/my-opa \
   configmap/"${POLICY_K8S_CONFIGMAP}"
+
 kubectl --namespace='default' delete \
   --ignore-not-found='true' \
   --filename="${GLOO_DEMO_RESOURCES_HOME}/petstore.yaml"
 
-# Install  example application
+# Install example application
 kubectl --namespace='default' apply \
   --filename="${GLOO_DEMO_RESOURCES_HOME}/petstore.yaml"
 
 # Create policy ConfigMap
-kubectl --namespace='gloo-system' create configmap "${POLICY_K8S_CONFIGMAP}" \
+kubectl --namespace="${GLOO_NAMESPACE}" create configmap "${POLICY_K8S_CONFIGMAP}" \
   --from-file="${SCRIPT_DIR}/policy.rego"
 
-# glooctl create virtualservice \
-#   --name='default' \
-#   --namespace='gloo-system' \
-#   --enable-opa-auth \
-#   --opa-query='data.test.allow == true' \
-#   --opa-module-ref="gloo-system.${POLICY_K8S_CONFIGMAP}"
-
-# glooctl add route \
-#   --name default \
-#   --path-prefix='/' \
-#   --dest-name='default-petstore-8080' \
-#   --dest-namespace='gloo-system'
+kubectl apply --filename - <<EOF
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: my-opa
+  namespace: "${GLOO_NAMESPACE}"
+spec:
+  configs:
+  - opa_auth:
+      modules:
+      - name: ${POLICY_K8S_CONFIGMAP}
+        namespace: "${GLOO_NAMESPACE}"
+      query: 'data.test.allow == true'
+EOF
 
 kubectl apply --filename - <<EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   name: default
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 spec:
   displayName: default
   virtualHost:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
             name: default-petstore-8080
-            namespace: gloo-system
-    virtualHostPlugins:
-      extensions:
-        configs:
-          extauth:
-            configs:
-            - opa_auth:
-                modules:
-                - name: ${POLICY_K8S_CONFIGMAP}
-                  namespace: gloo-system
-                query: 'data.test.allow == true'
+            namespace: "${GLOO_NAMESPACE}"
+    options:
+      extauth:
+        config_ref:
+          name: my-opa
+          namespace: "${GLOO_NAMESPACE}"
 EOF
 
 # Wait for demo application to be fully deployed and running
 kubectl --namespace='default' rollout status deployment/petstore --watch='true'
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-port_forward_deployment 'gloo-system' 'gateway-proxy-v2' '8080'
+port_forward_deployment "${GLOO_NAMESPACE}" 'gateway-proxy' '8080'
 
 sleep 5
 

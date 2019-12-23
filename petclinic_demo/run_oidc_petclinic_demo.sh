@@ -14,7 +14,7 @@ K8S_SECRET_NAME='my-oauth-secret'
 OIDC_CLIENT_ID='gloo'
 OIDC_CLIENT_SECRET='secretvalue'
 
-OIDC_ISSUER_URL='http://dex.gloo-system.svc.cluster.local:32000/'
+OIDC_ISSUER_URL="http://dex.${GLOO_NAMESPACE}.svc.cluster.local:32000/"
 OIDC_APP_URL="http://localhost:${PROXY_PORT}/"
 OIDC_CALLBACK_PATH='/callback'
 
@@ -30,7 +30,7 @@ set -eu
 trap print_error ERR
 
 # Cleanup previous example runs
-kubectl --namespace='gloo-system' delete \
+kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
   configmap/"${POLICY_K8S_CONFIGMAP}" \
   secret/"${K8S_SECRET_NAME}" \
@@ -43,13 +43,13 @@ kubectl --namespace='gloo-system' delete \
 # Install DEX OIDC Provider https://github.com/dexidp/dex
 # DEX is not required for Gloo extauth; it is here as an OIDC provider to simplify example
 helm upgrade --install dex stable/dex \
-  --namespace='gloo-system' \
+  --namespace="${GLOO_NAMESPACE}" \
   --wait \
   --values - <<EOF
 grpc: false
 
 config:
-  issuer: http://dex.gloo-system.svc.cluster.local:32000
+  issuer: http://dex.${GLOO_NAMESPACE}.svc.cluster.local:32000
 
   staticClients:
   - id: ${OIDC_CLIENT_ID}
@@ -72,14 +72,14 @@ config:
 EOF
 
 # Start port-forwards to allow DEX OIDC Provider to work with Gloo
-port_forward_deployment 'gloo-system' 'dex' '32000:5556'
+port_forward_deployment "${GLOO_NAMESPACE}" 'dex' '32000:5556'
 
 #
 # Configure Open Policy Agent policies
 #
 
 # Create OPA policy ConfigMap
-kubectl --namespace='gloo-system' create configmap "${POLICY_K8S_CONFIGMAP}" \
+kubectl --namespace="${GLOO_NAMESPACE}" create configmap "${POLICY_K8S_CONFIGMAP}" \
   --from-file="${SCRIPT_DIR}/allow-jwt.rego"
 
 #
@@ -89,7 +89,7 @@ kubectl --namespace='gloo-system' create configmap "${POLICY_K8S_CONFIGMAP}" \
 # Create Kubernetes Secret containing OIDC Client Secret
 # glooctl create secret oauth \
 #   --name="${K8S_SECRET_NAME}" \
-#   --namespace='gloo-system' \
+#   --namespace="${GLOO_NAMESPACE}" \
 #   --client-secret="${OIDC_CLIENT_SECRET}"
 
 kubectl apply --filename - <<EOF
@@ -100,14 +100,9 @@ metadata:
   annotations:
     resource_kind: '*v1.Secret'
   name: ${K8S_SECRET_NAME}
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 data:
-  extension: $(
-  base64 <<EOF2
-config:
-  client_secret: ${OIDC_CLIENT_SECRET}
-EOF2
-)
+  oauth: $(base64 --wrap=0 <(echo -n "client_secret: ${OIDC_CLIENT_SECRET}"))
 EOF
 
 # Create Gloo AuthConfig for AuthN (OIDC) and AuthZ (OPA)
@@ -116,7 +111,7 @@ apiVersion: enterprise.gloo.solo.io/v1
 kind: AuthConfig
 metadata:
   name: petclinic-auth
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 spec:
   configs:
   - oauth:
@@ -125,14 +120,14 @@ spec:
       client_id: ${OIDC_CLIENT_ID}
       client_secret_ref:
         name: ${K8S_SECRET_NAME}
-        namespace: gloo-system
+        namespace: "${GLOO_NAMESPACE}"
       issuer_url: ${OIDC_ISSUER_URL}
       scopes:
       - email
   - opa_auth:
       modules:
       - name: ${POLICY_K8S_CONFIGMAP}
-        namespace: gloo-system
+        namespace: "${GLOO_NAMESPACE}"
       query: data.test.allow == true
 EOF
 
@@ -150,32 +145,60 @@ kubectl --namespace='default' apply \
 kubectl --namespace='default' apply \
   --filename "${GLOO_DEMO_RESOURCES_HOME}/petstore.yaml"
 
-# Configure AWS upstreams
-if [[ -f "${HOME}/scripts/secret/aws_credentials.sh" ]]; then
+kubectl --namespace='default' label service/petstore \
+  --overwrite='true' \
+  'discovery.solo.io/function_discovery=enabled'
+
+# Configure AWS upstream
+if [[ -f "${HOME}/scripts/secret/aws_function_credentials.sh" ]]; then
   # Cleanup old resources
-  kubectl --namespace='gloo-system' delete \
+  kubectl --namespace="${GLOO_NAMESPACE}" delete \
     --ignore-not-found='true' \
     secret/aws \
     upstream/aws
 
-  # glooctl create secret aws --name 'aws' --namespace 'gloo-system' --access-key '<access key>' --secret-key '<secret key>'
-  source "${HOME}/scripts/secret/aws_credentials.sh"
+  # AWS_ACCESS_KEY='<access key>'
+  # AWS_SECRET_KEY='<secret key>'
+  source "${HOME}/scripts/secret/aws_function_credentials.sh"
+
+  # glooctl create secret aws --name='aws' \
+  #   --namespace="${GLOO_NAMESPACE}" \
+  #   --access-key="${AWS_ACCESS_KEY}" \
+  #   --secret-key="${AWS_SECRET_KEY}"
+
+  kubectl apply --filename - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws
+  namespace: "${GLOO_NAMESPACE}"
+type: Opaque
+data:
+  aws_access_key_id: $(base64 --wrap='0' - <(echo -n "${AWS_ACCESS_KEY}"))
+  aws_secret_access_key: $(base64 --wrap='0' - <(echo -n "${AWS_SECRET_KEY}"))
+EOF
+
+  # glooctl create upstream aws \
+  #   --name='aws' \
+  #   --namespace="${GLOO_NAMESPACE}" \
+  #   --aws-region='us-east-1' \
+  #   --aws-secret-name='aws' \
+  #   --aws-secret-namespace="${GLOO_NAMESPACE}"
 
   kubectl apply --filename - <<EOF
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
   name: aws
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 spec:
-  upstreamSpec:
-    aws:
-      region: us-east-1
-      secretRef:
-        name: aws
-        namespace: gloo-system
+  aws:
+    region: us-east-1
+    secret_ref:
+      name: aws
+      namespace: "${GLOO_NAMESPACE}"
 EOF
-fi
+fi # Configure AWS upstream
 
 #
 # Configure Traffic Routing rules
@@ -183,50 +206,49 @@ fi
 
 # glooctl create virtualservice \
 #   --name='default' \
-#   --namespace='gloo-system' \
+#   --namespace="${GLOO_NAMESPACE}" \
 #   --enable-oidc-auth \
 #   --oidc-auth-app-url="${OIDC_APP_URL}" \
 #   --oidc-auth-callback-path="${OIDC_CALLBACK_PATH}" \
 #   --oidc-auth-client-id="${OIDC_CLIENT_ID}" \
 #   --oidc-auth-client-secret-name="${K8S_SECRET_NAME}" \
-#   --oidc-auth-client-secret-namespace='gloo-system' \
+#   --oidc-auth-client-secret-namespace="${GLOO_NAMESPACE}" \
 #   --oidc-auth-issuer-url="${OIDC_ISSUER_URL}" \
 #   --oidc-scope='email' \
 #   --enable-opa-auth \
 #   --opa-query='data.test.allow == true' \
-#   --opa-module-ref="gloo-system.${POLICY_K8S_CONFIGMAP}"
+#   --opa-module-ref="${GLOO_NAMESPACE}.${POLICY_K8S_CONFIGMAP}"
 
 # glooctl add route \
 #   --name='default' \
+#   --namespace="${GLOO_NAMESPACE}" \
 #   --path-prefix='/' \
 #   --dest-name='default-petclinic-8080' \
-#   --dest-namespace='gloo-system'
+#   --dest-namespace="${GLOO_NAMESPACE}"
 
 kubectl apply --filename - <<EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   name: default
-  namespace: gloo-system
+  namespace: "${GLOO_NAMESPACE}"
 spec:
   virtualHost:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
             name: default-petclinic-8080
-            namespace: gloo-system
-    virtualHostPlugins:
-      extensions:
-        configs:
-          extauth:
-            config_ref:
-              name: petclinic-auth
-              namespace: gloo-system
+            namespace: "${GLOO_NAMESPACE}"
+    options:
+      extauth:
+        config_ref:
+          name: petclinic-auth
+          namespace: "${GLOO_NAMESPACE}"
 EOF
 
 #
@@ -234,12 +256,12 @@ EOF
 #
 
 # Expose and open in browser GlooE Web UI Console
-port_forward_deployment 'gloo-system' 'api-server' "${WEB_UI_PORT:-9088}:8080"
+port_forward_deployment "${GLOO_NAMESPACE}" 'api-server' "${WEB_UI_PORT:-9088}:8080"
 
 open "http://localhost:${WEB_UI_PORT:-9088}/"
 
 # Open in browser petclinic home page
-port_forward_deployment 'gloo-system' 'gateway-proxy-v2' "${PROXY_PORT:-9080}:8080"
+port_forward_deployment "${GLOO_NAMESPACE}" 'gateway-proxy' "${PROXY_PORT:-9080}:8080"
 
 # Wait for app to be fully deployed and running
 kubectl --namespace='default' rollout status deployment/petclinic --watch='true'

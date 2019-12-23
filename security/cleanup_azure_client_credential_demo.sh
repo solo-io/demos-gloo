@@ -9,10 +9,11 @@ source "${SCRIPT_DIR}/../working_environment.sh"
 
 cleanup_port_forward_deployment 'gateway-proxy'
 
-kubectl --namespace='gloo-system' delete \
+kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
-  virtualservice/default
+  virtualservice/default \
+  upstream/oauth
 
-  kubectl --namespace='default' delete \
+kubectl --namespace='default' delete \
   --ignore-not-found='true' \
   --filename="${GLOO_DEMO_RESOURCES_HOME}/petstore.yaml"

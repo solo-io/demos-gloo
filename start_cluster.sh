@@ -1,17 +1,16 @@
 #!/usr/bin/env bash
 #
-# Starts up a Kubernetes clusterbased on settings in working_environment.sh
+# Starts up a Kubernetes cluster based on settings in working_environment.sh
 
 # Expects
-# brew install kubernetes-cli kubernetes-helm skaffold
+# brew install kubernetes-cli helm
 
 # Optional
-# brew install go openshift-cli; brew cask install minikube minishift
+# brew install kind minikube skaffold openshift-cli; brew cask install minishift
 
-GLOO_ENT_VERSION='0.21.1'
-GLOO_OSS_VERSION='0.21.3'
+GLOO_NAMESPACE="${GLOO_NAMESPACE:-gloo-system}"
 
-K8S_VERSION='v1.15.6'
+K8S_VERSION='latest'
 
 # Get directory this script is located in to access script local files
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
@@ -28,11 +27,6 @@ K8S_TOOL="${K8S_TOOL:-kind}" # kind, minikube, minishift, gcloud, custom
 
 case "${K8S_TOOL}" in
   kind)
-    if [[ -x "$(command -v go)" ]] && [[ "$(go version)" =~ go1.13 ]]; then
-      # Install latest version of kind https://kind.sigs.k8s.io/
-      GO111MODULE='on' go get sigs.k8s.io/kind@v0.6.0
-    fi
-
     DEMO_CLUSTER_NAME="${DEMO_CLUSTER_NAME:-kind}"
 
     # Delete existing cluster, i.e. restart cluster
@@ -42,25 +36,40 @@ case "${K8S_TOOL}" in
 
     # Setup local Kubernetes cluster using kind (Kubernetes IN Docker) with
     # control plane and worker nodes
-    kind create cluster --name="${DEMO_CLUSTER_NAME}" --image=kindest/node:"${K8S_VERSION}" --wait='60s'
+    if [[ "${K8S_VERSION}" == 'latest' ]]; then
+      kind create cluster --name="${DEMO_CLUSTER_NAME}" \
+        --wait='60s'
+    else
+      kind create cluster --name="${DEMO_CLUSTER_NAME}" \
+        --image=kindest/node:"${K8S_VERSION}" \
+        --wait='60s'
+    fi
     ;;
 
   minikube)
     DEMO_CLUSTER_NAME="${DEMO_CLUSTER_NAME:-minikube}"
 
     # for Mac (can also use Virtual Box)
-    # brew install hyperkit; brew cask install minikube
+    # brew install minikube
     # minikube config set vm-driver hyperkit
 
     # minikube config set cpus 4
     # minikube config set memory 4096
 
     minikube delete --profile="${DEMO_CLUSTER_NAME}" && true # Ignore errors
-    minikube start --profile="${DEMO_CLUSTER_NAME}" \
-      --cpus='4' \
-      --memory='8192mb' \
-      --wait='true' \
-      --kubernetes-version="${K8S_VERSION}"
+
+    if [[ "${K8S_VERSION}" == 'latest' ]]; then
+      minikube start --profile="${DEMO_CLUSTER_NAME}" \
+        --cpus='4' \
+        --memory='8192mb' \
+        --wait='true'
+    else
+      minikube start --profile="${DEMO_CLUSTER_NAME}" \
+        --cpus='4' \
+        --memory='8192mb' \
+        --wait='true' \
+        --kubernetes-version="${K8S_VERSION}"
+    fi
 
     source <(minikube docker-env --profile="${DEMO_CLUSTER_NAME}")
     ;;
@@ -85,25 +94,25 @@ case "${K8S_TOOL}" in
     oc login --username='system:admin'
 
     # Add security context constraint to users or a service account
-    oc --namespace gloo-system adm policy add-scc-to-user anyuid \
+    oc --namespace "${GLOO_NAMESPACE}" adm policy add-scc-to-user anyuid \
       --serviceaccount='glooe-prometheus-server'
-    oc --namespace gloo-system adm policy add-scc-to-user anyuid \
+    oc --namespace "${GLOO_NAMESPACE}" adm policy add-scc-to-user anyuid \
       --serviceaccount='glooe-prometheus-kube-state-metrics'
-    oc --namespace gloo-system adm policy add-scc-to-user anyuid \
+    oc --namespace "${GLOO_NAMESPACE}" adm policy add-scc-to-user anyuid \
       --serviceaccount='glooe-grafana'
-    oc --namespace gloo-system adm policy add-scc-to-user anyuid \
+    oc --namespace "${GLOO_NAMESPACE}" adm policy add-scc-to-user anyuid \
       --serviceaccount='default'
 
     source <(minishift docker-env --profile "${DEMO_CLUSTER_NAME}")
     ;;
 
   gcloud)
-    DEMO_CLUSTER_NAME="${DEMO_CLUSTER_NAME:-gke-gloo}"
+    DEMO_CLUSTER_NAME="$(whoami)-${DEMO_CLUSTER_NAME:-gke-gloo}"
 
     gcloud container clusters delete "${DEMO_CLUSTER_NAME}" --quiet && true # Ignore errors
     gcloud beta container clusters create "${DEMO_CLUSTER_NAME}" \
-      --release-channel='stable' \
-      --machine-type='n1-standard-2' \
+      --release-channel='regular' \
+      --machine-type='n1-standard-4' \
       --num-nodes='3' \
       --no-enable-basic-auth \
       --enable-ip-alias \
@@ -135,92 +144,3 @@ if [[ -x "$(command -v skaffold)" ]]; then
   skaffold config set --kube-context="$(kubectl config current-context)" \
     local-cluster true
 fi
-
-TILLER_MODE="${TILLER_MODE:-cluster}" # local, cluster, none
-
-unset HELM_HOST
-
-case "${TILLER_MODE}" in
-  local)
-    # Run Tiller locally (external) to Kubernetes cluster as it's faster
-    TILLER_PID_FILE="${SCRIPT_DIR}/tiller.pid"
-    if [[ -f "${TILLER_PID_FILE}" ]]; then
-      xargs kill <"${TILLER_PID_FILE}" && true # Ignore errors
-      rm "${TILLER_PID_FILE}"
-    fi
-    TILLER_PORT=":44134"
-    tiller --storage='secret' --listen="${TILLER_PORT}" &
-    echo $! >"${TILLER_PID_FILE}"
-    export HELM_HOST="${TILLER_PORT}"
-    ;;
-
-  cluster)
-    # Install Helm and Tiller
-    kubectl --namespace='kube-system' create serviceaccount tiller
-
-    kubectl create clusterrolebinding tiller-cluster-rule \
-      --clusterrole='cluster-admin' \
-      --serviceaccount='kube-system:tiller'
-
-    helm init --service-account tiller
-
-    # Wait for tiller to be fully running
-    kubectl --namespace='kube-system' rollout status deployment/tiller-deploy \
-      --watch='true'
-    ;;
-
-  none) ;;
-
-esac
-
-GLOO_MODE="${GLOO_MODE:-ent}" # oss, ent, knative, none
-
-case "${GLOO_MODE}" in
-  ent)
-    GLOO_VERSION="${GLOO_VERSION:-$GLOO_ENT_VERSION}"
-
-    if [[ -f "${HOME}/scripts/secret/glooe_license_key.sh" ]]; then
-      # export GLOOE_LICENSE_KEY=<valid key>
-      source "${HOME}/scripts/secret/glooe_license_key.sh"
-    fi
-    if [[ -z "${GLOOE_LICENSE_KEY}" ]]; then
-      echo 'You must set GLOOE_LICENSE_KEY with GlooE activation key'
-      exit
-    fi
-
-    helm repo add glooe 'http://storage.googleapis.com/gloo-ee-helm'
-    helm repo update
-    helm upgrade --install glooe glooe/gloo-ee \
-      --namespace='gloo-system' \
-      --version="${GLOO_VERSION}" \
-      --set="license_key=${GLOOE_LICENSE_KEY}" \
-      --set="gloo.gatewayProxies.gatewayProxyV2.readConfig=true"
-    ;;
-
-  oss)
-    GLOO_VERSION="${GLOO_VERSION:-$GLOO_OSS_VERSION}"
-
-    helm repo add gloo 'https://storage.googleapis.com/solo-public-helm'
-    helm repo update
-    helm upgrade --install gloo gloo/gloo \
-      --namespace='gloo-system' \
-      --version="${GLOO_VERSION}" \
-      --set="gloo.gatewayProxies.gatewayProxyV2.readConfig=true"
-    ;;
-
-  knative)
-    GLOO_VERSION="${GLOO_VERSION:-$GLOO_OSS_VERSION}"
-
-    helm repo add gloo 'https://storage.googleapis.com/solo-public-helm'
-    helm repo update
-    helm fetch --untar='true' --untardir='.' --version="${GLOO_VERSION}" \
-      gloo/gloo
-    helm upgrade --install gloo gloo/gloo \
-      --namespace='gloo-system' \
-      --version="${GLOO_VERSION}" \
-      --values='gloo/values-knative.yaml'
-    ;;
-
-  none) ;;
-
-esac
