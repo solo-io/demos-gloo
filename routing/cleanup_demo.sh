@@ -12,7 +12,10 @@ cleanup_port_forward_deployment 'ingress-proxy'
 
 kubectl --namespace='gloo-system' delete \
   --ignore-not-found='true' \
-  virtualservice/default
+  virtualservice/default \
+  routetable/a-routes \
+  routetable/b-routes \
+  routetable/b2-routes
 
   kubectl --namespace='default' delete \
   --ignore-not-found='true' \
