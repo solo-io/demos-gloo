@@ -73,12 +73,11 @@ metadata:
   name: ${FUNCTION_UPSTREAM_NAME}
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    aws:
-      region: ${AWS_REGION}
-      secretRef:
-        name: ${FUNCTION_SECRET_NAME}
-        namespace: gloo-system
+  aws:
+    region: ${AWS_REGION}
+    secretRef:
+      name: ${FUNCTION_SECRET_NAME}
+      namespace: gloo-system
 EOF
 
 # Create a Virtual Service referencing Azure upstream/function

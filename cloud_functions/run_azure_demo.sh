@@ -81,15 +81,14 @@ metadata:
   name: ${FUNCTION_UPSTREAM_NAME}
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    azure:
-      functionAppName: ${AZURE_APP_NAME}
-      functions:
-      - functionName: ${AZURE_FUNCTION_NAME}
-        authLevel: Function
-      secretRef:
-        name: ${FUNCTION_SECRET_NAME}
-        namespace: gloo-system
+  azure:
+    functionAppName: ${AZURE_APP_NAME}
+    functions:
+    - functionName: ${AZURE_FUNCTION_NAME}
+      authLevel: Function
+    secretRef:
+      name: ${FUNCTION_SECRET_NAME}
+      namespace: gloo-system
 EOF
 
 # Create a Virtual Service referencing Azure upstream/function
