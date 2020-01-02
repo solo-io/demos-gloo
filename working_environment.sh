@@ -6,8 +6,13 @@ GLOO_MODE='ent'     # oss, ent, knative, none
 
 GLOO_NAMESPACE='gloo-system'
 
-GLOO_VERSION='1.2.0' # ent
-# GLOO_VERSION='1.2.12' # oss
+if [[ "${GLOO_MODE}" == "ent" ]]; then
+  # Gloo Enterprise Version
+  GLOO_VERSION='1.2.0'
+else
+  # Gloo Open Source Version
+  GLOO_VERSION='1.2.14'
+fi
 
 GLOO_DEMO_HOME="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
