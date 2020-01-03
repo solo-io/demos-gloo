@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2034
 
-K8S_TOOL='minikube' # kind, minikube, k3d, minishift, gcloud, custom
+K8S_TOOL='minikube' # kind, minikube, k3d, minishift, gke, eks, aks, custom
 GLOO_MODE='ent'     # oss, ent, knative, none
 
 GLOO_NAMESPACE='gloo-system'

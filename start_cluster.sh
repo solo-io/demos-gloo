@@ -23,7 +23,7 @@ source "${SCRIPT_DIR}/working_environment.sh"
 set -eu
 trap print_error ERR
 
-K8S_TOOL="${K8S_TOOL:-kind}" # kind, minikube, minishift, gcloud, custom
+K8S_TOOL="${K8S_TOOL:-kind}" # kind, minikube, minishift, gke, eks, custom
 
 case "${K8S_TOOL}" in
   kind)
@@ -44,7 +44,13 @@ case "${K8S_TOOL}" in
         --image=kindest/node:"${K8S_VERSION}" \
         --wait='60s'
     fi
-    ;;
+
+    # Tell skaffold how to connect to local Kubernetes cluster running in
+    # non-default profile name
+    skaffold config set --kube-context="$(kubectl config current-context)" \
+      local-cluster true
+
+    ;; # end kind
 
   minikube)
     DEMO_CLUSTER_NAME="${DEMO_CLUSTER_NAME:-minikube}"
@@ -72,7 +78,13 @@ case "${K8S_TOOL}" in
     fi
 
     source <(minikube docker-env --profile="${DEMO_CLUSTER_NAME}")
-    ;;
+
+    # Tell skaffold how to connect to local Kubernetes cluster running in
+    # non-default profile name
+    skaffold config set --kube-context="$(kubectl config current-context)" \
+      local-cluster true
+
+    ;; # end minikube
 
   k3d)
     DEMO_CLUSTER_NAME="${DEMO_CLUSTER_NAME:-k3s-default}"
@@ -94,7 +106,13 @@ case "${K8S_TOOL}" in
 
     KUBECONFIG=$(k3d get-kubeconfig --name="${DEMO_CLUSTER_NAME}")
     export KUBECONFIG
-    ;;
+
+    # Tell skaffold how to connect to local Kubernetes cluster running in
+    # non-default profile name
+    skaffold config set --kube-context="$(kubectl config current-context)" \
+      local-cluster true
+
+    ;; # end k3d
 
   minishift)
     DEMO_CLUSTER_NAME="${DEMO_CLUSTER_NAME:-minishift}"
@@ -126,9 +144,15 @@ case "${K8S_TOOL}" in
       --serviceaccount='default'
 
     source <(minishift docker-env --profile "${DEMO_CLUSTER_NAME}")
-    ;;
 
-  gcloud)
+    # Tell skaffold how to connect to local Kubernetes cluster running in
+    # non-default profile name
+    skaffold config set --kube-context="$(kubectl config current-context)" \
+      local-cluster true
+
+    ;; # end minishift
+
+  gke)
     DEMO_CLUSTER_NAME="$(whoami)-${DEMO_CLUSTER_NAME:-gke-gloo}"
 
     gcloud container clusters delete "${DEMO_CLUSTER_NAME}" --quiet && true # Ignore errors
@@ -154,15 +178,45 @@ case "${K8S_TOOL}" in
     # Helm requires metrics API to be available, and GKE can be slow to start that
     wait_for_k8s_metrics_server
 
-    ;;
+    ;; # end gke
+
+  eks)
+    DEMO_CLUSTER_NAME="$(whoami)-${DEMO_CLUSTER_NAME:-eks-gloo}"
+
+    eksctl delete cluster --name="${DEMO_CLUSTER_NAME}" && true # Ignore errors
+    eksctl create cluster \
+      --name="${DEMO_CLUSTER_NAME}" \
+      --tags="creator=$(whoami)" \
+      --nodes='3'
+      # --region='us-east-2' \
+      # --version='1.14'
+
+    ;; # end eks
+
+  # aks)
+  #   DEMO_CLUSTER_NAME="$(whoami)-${DEMO_CLUSTER_NAME:-aks-gloo}"
+  #   RESOURCE_GROUP_NAME="${DEMO_CLUSTER_NAME}-resource-group"
+
+  #   az group create \
+  #     --name "${RESOURCE_GROUP_NAME}" \
+  #     --location eastus
+
+  #   az aks delete --name "${DEMO_CLUSTER_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" && true # Ignore errors
+  #   az aks create \
+  #     --name "${DEMO_CLUSTER_NAME}" \
+  #     --resource-group "${RESOURCE_GROUP_NAME}" \
+  #     --node-count '1' \
+  #     --enable-addons monitoring \
+  #     --generate-ssh-keys
+
+  #   # The --admin option logs us in with cluster admin rights needed to install Gloo
+  #   az aks get-credentials \
+  #     --name "${DEMO_CLUSTER_NAME}" \
+  #     --resource-group "${RESOURCE_GROUP_NAME}" \
+  #     --admin
+
+  #   ;; # end aks
 
   custom) ;;
 
 esac
-
-# Tell skaffold how to connect to local Kubernetes cluster running in
-# non-default profile name
-if [[ -x "$(command -v skaffold)" ]]; then
-  skaffold config set --kube-context="$(kubectl config current-context)" \
-    local-cluster true
-fi

@@ -27,9 +27,24 @@ case "${K8S_TOOL}" in
     minishift delete --profile="${DEMO_CLUSTER_NAME:-minishift}" --force
     ;;
 
-  gcloud)
+  gke)
     gcloud container clusters delete "$(whoami)-${DEMO_CLUSTER_NAME:-gke-gloo}" --quiet
     ;;
+
+  eks)
+    eksctl delete cluster --name="$(whoami)-${DEMO_CLUSTER_NAME:-eks-gloo}"
+    ;;
+
+  # aks)
+  #   DEMO_CLUSTER_NAME="$(whoami)-${DEMO_CLUSTER_NAME:-aks-gloo}"
+  #   RESOURCE_GROUP_NAME="${DEMO_CLUSTER_NAME}-resource-group"
+
+  #   az aks delete \
+  #     --name "${DEMO_CLUSTER_NAME}" \
+  #     --resource-group "${RESOURCE_GROUP_NAME}"
+
+  #   az group delete --name "${RESOURCE_GROUP_NAME}"
+  #   ;;
 
   custom) ;;
 
