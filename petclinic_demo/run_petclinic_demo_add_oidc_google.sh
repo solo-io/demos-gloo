@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-PROXY_PORT='9080'
+PROXY_PORT='8080'
 
 # Get directory this script is located in to access script local files
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
@@ -38,7 +38,7 @@ kubectl --namespace="${GLOO_NAMESPACE}" delete \
 # glooctl create secret oauth \
 #   --name="${K8S_SECRET_NAME}" \
 #   --namespace="${GLOO_NAMESPACE}" \
-#   --client-secret="${AUTH0_CLIENT_SECRET}"
+#   --client-secret="${OIDC_CLIENT_SECRET}"
 
 kubectl apply --filename - <<EOF
 apiVersion: v1

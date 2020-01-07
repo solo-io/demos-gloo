@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-PROXY_PORT='9080'
+PROXY_PORT='8080'
 WEB_UI_PORT='9088'
 
 # Get directory this script is located in to access script local files
@@ -14,9 +14,9 @@ source "${SCRIPT_DIR}/../working_environment.sh"
 set -eu
 trap print_error ERR
 
-port_forward_deployment "${GLOO_NAMESPACE}" 'api-server' "${WEB_UI_PORT:-9088}:8080"
+port_forward_deployment "${GLOO_NAMESPACE}" 'api-server' "${WEB_UI_PORT}:8080"
 
-port_forward_deployment "${GLOO_NAMESPACE}" 'gateway-proxy' "${PROXY_PORT:-9080}:8080"
+port_forward_deployment "${GLOO_NAMESPACE}" 'gateway-proxy' "${PROXY_PORT}:8080"
 
 port_forward_deployment "${GLOO_NAMESPACE}" 'glooe-prometheus-server' '9090'
 
