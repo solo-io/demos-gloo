@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+PROXY_PORT='9080'
+
 # Get directory this script is located in to access script local files
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
@@ -19,7 +21,7 @@ if [[ -f "${HOME}/scripts/secret/auth0_oidc_credentials.sh" ]]; then
   source "${HOME}/scripts/secret/auth0_oidc_credentials.sh"
 fi
 
-OIDC_APP_URL='http://localhost:9080/'
+OIDC_APP_URL="http://localhost:${PROXY_PORT}/"
 OIDC_CALLBACK_PATH='/callback'
 OIDC_ISSUER_URL="https://${AUTH0_DOMAIN}/"
 OIDC_CLIENT_ID="${AUTH0_CLIENT_ID}"
@@ -30,7 +32,7 @@ K8S_SECRET_NAME='my-oauth-secret'
 # Cleanup old examples
 kubectl --namespace="${GLOO_NAMESPACE}" delete \
   --ignore-not-found='true' \
-  authconfig/my-oidc
+  authconfig/my-oidc \
   secret/"${K8S_SECRET_NAME}"
 
 # glooctl create secret oauth \

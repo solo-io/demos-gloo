@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-PROXY_PORT='9080'
+PROXY_PORT='8080'
 WEB_UI_PORT='9088'
 
 # Get directory this script is located in to access script local files
@@ -128,17 +128,17 @@ EOF
 #
 
 # Expose and open in browser GlooE Web UI Console
-port_forward_deployment "${GLOO_NAMESPACE}" 'api-server' "${WEB_UI_PORT:-9088}:8080"
+port_forward_deployment "${GLOO_NAMESPACE}" 'api-server' "${WEB_UI_PORT}:8080"
 
-open "http://localhost:${WEB_UI_PORT:-9088}/"
+open "http://localhost:${WEB_UI_PORT}/"
 
 # Create localhost port-forward of Gloo Proxy as this works with kind and other Kubernetes clusters
-port_forward_deployment "${GLOO_NAMESPACE}" 'gateway-proxy' "${PROXY_PORT:-9080}:8080"
+port_forward_deployment "${GLOO_NAMESPACE}" 'gateway-proxy' "${PROXY_PORT}:8080"
 
 # Wait for app to be fully deployed and running
 kubectl --namespace='default' rollout status deployment/petclinic --watch='true'
 
-open "http://localhost:${PROXY_PORT:-9080}/"
+open "http://localhost:${PROXY_PORT}/"
 
 # Create localhost port-forward of Gloo installed Promethesu
 port_forward_deployment "${GLOO_NAMESPACE}" 'glooe-prometheus-server' '9090'
