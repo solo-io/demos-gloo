@@ -8,7 +8,7 @@
 # Optional
 # brew install kind minikube skaffold openshift-cli; brew cask install minishift
 
-GLOO_ENT_VERSION='1.2.0'
+GLOO_ENT_VERSION='1.2.1'
 GLOO_OSS_VERSION='1.2.14'
 
 GLOO_NAMESPACE="${GLOO_NAMESPACE:-gloo-system}"
