@@ -17,7 +17,7 @@ OIDC_APP_URL="http://localhost:${PROXY_PORT}/"
 OIDC_CALLBACK_PATH="http://localhost:${PROXY_PORT}/callback"
 OIDC_ISSUER_URL="http://keycloak.example.test/auth/realms/k8s/"
 OIDC_CLIENT_ID='test'
-OIDC_CLIENT_SECRET='5f9f727f-f57f-4773-be42-c60a4e0c8607'
+OIDC_CLIENT_SECRET='cb110795-724c-4901-b81c-0c7f81690c22'
 
 K8S_SECRET_NAME='my-oauth-secret'
 

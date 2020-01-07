@@ -468,7 +468,7 @@
       "surrogateAuthRequired": false,
       "enabled": true,
       "clientAuthenticatorType": "client-secret",
-      "secret": "**********",
+      "secret": "cb110795-724c-4901-b81c-0c7f81690c22",
       "redirectUris": [
         "http://localhost:8080/*"
       ],
