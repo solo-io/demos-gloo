@@ -9,6 +9,14 @@ All included `run_xxx_demo.sh` scripts are paired with a `cleanup_xxx_demo.sh` s
 * `./run_petclinic_demo.sh` - starts the "standard" Gloo Petclinic demo
 * `./run_oidc_petclinic_demo.sh` - starts the Petclinic demo whose home page is protected by a local OpenID Connect provider DEX.
 
+## Keycloak
+
+Update `/etc/resolver/minikube-minikube-test` with latest `minikube ip`
+
+```shell
+nslookup keycloak.example.test $(minikube ip)
+```
+
 ## Script
 
 1. Walk viewer through Spring PetClinic application explaining that its an example
