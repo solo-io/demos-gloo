@@ -8,7 +8,7 @@ GLOO_NAMESPACE='gloo-system'
 
 if [[ "${GLOO_MODE}" == "ent" ]]; then
   # Gloo Enterprise Version
-  GLOO_VERSION='1.2.0'
+  GLOO_VERSION='1.2.1'
 else
   # Gloo Open Source Version
   GLOO_VERSION='1.2.14'
