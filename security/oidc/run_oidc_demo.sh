@@ -173,6 +173,9 @@ spec:
         namespace: "${GLOO_NAMESPACE}"
       issuer_url: ${OIDC_ISSUER_URL}
       scopes: ${OIDC_SCOPES:-[]}
+      auth_endpoint_query_params: {}
+        # key1: value1
+        # key2: value2
 EOF
 
 kubectl apply --filename - <<EOF
