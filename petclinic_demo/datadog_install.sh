@@ -33,7 +33,7 @@ gloo:
         extraAnnotations:
           ad.datadoghq.com/gateway-proxy.check_names: '["envoy"]'
           ad.datadoghq.com/gateway-proxy.init_configs: '[{}]'
-          ad.datadoghq.com/gateway-proxy.instances: '[{"stats_url": "http://gateway-proxy.gloo-system.svc.cluster.local:80/stats"}]'
+          ad.datadoghq.com/gateway-proxy.instances: '[{"stats_url": "http://%%host%%:8082/stats"}]'
           ad.datadoghq.com/gateway-proxy.logs: '[{"source": "envoy", "service": "gateway-proxy"}]'
       readConfig: true
       tracing:
@@ -53,33 +53,35 @@ gloo:
             service_name: envoy
 EOF
 
+# ad.datadoghq.com/gateway-proxy.instances: '[{"stats_url": "http://gateway-proxy.gloo-system.svc.cluster.local:80/stats"}]'
+
 # Add Envoy stats route
-kubectl apply --filename - <<EOF
-apiVersion: gloo.solo.io/v1
-kind: Upstream
-metadata:
-  name: localhost
-  namespace: ${GLOO_NAMESPACE}
-spec:
-  static:
-    hosts:
-      - addr: localhost
-        port: 8082
-EOF
+# kubectl apply --filename - <<EOF
+# apiVersion: gloo.solo.io/v1
+# kind: Upstream
+# metadata:
+#   name: localhost
+#   namespace: ${GLOO_NAMESPACE}
+# spec:
+#   static:
+#     hosts:
+#       - addr: localhost
+#         port: 8082
+# EOF
 
-glooctl add route \
-  --name='default' \
-  --namespace="${GLOO_NAMESPACE}" \
-  --path-prefix='/stats' \
-  --dest-name='localhost' \
-  --dest-namespace="${GLOO_NAMESPACE}"
+# glooctl add route \
+#   --name='default' \
+#   --namespace="${GLOO_NAMESPACE}" \
+#   --path-prefix='/stats' \
+#   --dest-name='localhost' \
+#   --dest-namespace="${GLOO_NAMESPACE}"
 
-glooctl add route \
-  --name='default' \
-  --namespace="${GLOO_NAMESPACE}" \
-  --path-prefix='/' \
-  --dest-name='default-petclinic-8080' \
-  --dest-namespace="${GLOO_NAMESPACE}"
+# glooctl add route \
+#   --name='default' \
+#   --namespace="${GLOO_NAMESPACE}" \
+#   --path-prefix='/' \
+#   --dest-name='default-petclinic-8080' \
+#   --dest-namespace="${GLOO_NAMESPACE}"
 
 # Create a secret that contains your API Key. This secret will be used in the manifest to deploy the Datadog Agent.
 if [[ -f "${HOME}/scripts/secret/datadog_credentials.sh" ]]; then
